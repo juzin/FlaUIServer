@@ -6,11 +6,11 @@ namespace FlaUIServer.CommandHandlers;
 
 public record CreateSessionCommand(CreateSessionRequest CreateSession) : IRequest<SessionResponse>;
 
-public class CreateSessionCommandHandler(ISessionManager sessionManager): IRequestHandler<CreateSessionCommand, SessionResponse>
+public class CreateSessionCommandHandler(ISessionManager sessionManager, ILoggerFactory loggerFactory): IRequestHandler<CreateSessionCommand, SessionResponse>
 {
     public async Task<SessionResponse> Handle(CreateSessionCommand request, CancellationToken cancellationToken)
     {
-        var sessionId = await Task.Run(() => sessionManager.CreateSession(request.CreateSession.Capabilities), cancellationToken);
+        var sessionId = await Task.Run(() => sessionManager.CreateSession(request.CreateSession.Capabilities, loggerFactory), cancellationToken);
         return new SessionResponse(sessionId);
     }
 }

@@ -16,4 +16,7 @@ public class AlwaysMatch
 {
     [JsonPropertyName("appium:app")]
     public string Application { get; set; }
+    
+    [JsonPropertyName("appium:appTopLevelWindow")]
+    public string ApplicationTopLevelWindow { get; set; }
 }

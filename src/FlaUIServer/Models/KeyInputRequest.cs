@@ -1,6 +1,6 @@
 ﻿namespace FlaUIServer.Models;
 
-public class FillTextRequest
+public class KeyInputRequest
 {
     public char[] Value { get; set; } 
 }

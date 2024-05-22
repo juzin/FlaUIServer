@@ -3,11 +3,15 @@ using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 using FlaUI.UIA3;
 using FlaUIServer.Enums;
 using FlaUIServer.Exceptions;
 using FlaUIServer.Extensions;
 using FlaUIServer.Models;
+using FlaUIServer.Models.Gestures;
+using FlaUIServer.Helpers;
 
 namespace FlaUIServer.Session;
 
@@ -16,9 +20,11 @@ namespace FlaUIServer.Session;
 /// </summary>
 public class WinAppSession : IDisposable
 {
+    private readonly ILogger<WinAppSession> _logger;
     private readonly UIA3Automation _automation;
     private readonly Application _application;
     private readonly Dictionary<Guid, AutomationElement> _elements = [];
+    private Window _activeWindow;
 
     /// <summary>
     /// Session id
@@ -28,7 +34,29 @@ public class WinAppSession : IDisposable
     /// <summary>
     /// Active window
     /// </summary>
-    public Window ActiveWindow { get; private set; }
+    public Window ActiveWindow
+    {
+        get
+        {
+            // In case window is null return application main window
+            if (_activeWindow is null)
+            {
+                if (IsRootSession)
+                {
+                    _automation.GetDesktop().AsWindow();
+                }
+                else
+                {
+                    _activeWindow = _application.GetMainWindow(_automation);
+                }
+            }
+            return _activeWindow;
+        }
+        private set
+        {
+            _activeWindow = value;
+        }
+    }
     
     public bool IsRootSession { get; }
 
@@ -42,20 +70,40 @@ public class WinAppSession : IDisposable
     /// </summary>
     public DateTimeOffset LastActionAt { get; private set; }
 
-    public WinAppSession(Capabilities capabilities)
+    /// <summary>
+    /// Initializes new instance of <see cref="WinAppSession"/>
+    /// </summary>
+    /// <param name="capabilities">Session capabilities</param>
+    /// <param name="loggerFactory">Logger factory</param>
+    public WinAppSession(Capabilities capabilities, ILoggerFactory loggerFactory)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
-        ArgumentException.ThrowIfNullOrEmpty(capabilities.AlwaysMatch.Application);
-
-        // TODO: handle root session
-        // TODO: attach to running app
-        var application = Application.Launch(capabilities.AlwaysMatch.Application);
-        IsRootSession = false;
-        Created = DateTimeOffset.Now;
-        _application = application;
-        SessionId = Guid.NewGuid();
+        ArgumentNullException.ThrowIfNull(loggerFactory);
+        
+        _logger = loggerFactory.CreateLogger<WinAppSession>();
         _automation = new UIA3Automation();
-        ActiveWindow = _application.GetMainWindow(_automation);
+        
+        
+        if (capabilities.AlwaysMatch.ApplicationTopLevelWindow is not null)
+        {
+            _application = Application.Attach(Convert.ToInt32(capabilities.AlwaysMatch.ApplicationTopLevelWindow, 16));
+        }
+        else if (capabilities.AlwaysMatch.Application == "Root")
+        {
+            _application = null;
+            ActiveWindow = _automation.GetDesktop().AsWindow();
+            IsRootSession = true;
+        }
+        else
+        {
+            _application = Application.Launch(capabilities.AlwaysMatch.Application);
+            ActiveWindow = _application.GetMainWindow(_automation);
+            IsRootSession = false;
+        }
+        
+        Created = DateTimeOffset.Now;
+        SessionId = Guid.NewGuid();
+        
         LastActionAt = DateTimeOffset.Now;
     }
 
@@ -145,6 +193,7 @@ public class WinAppSession : IDisposable
     public void ElementFillText(Guid elementId, string text)
     {
         var element = GetElement(elementId);
+        element.Focus();
         element.AsTextBox().Enter(text);
     }
 
@@ -302,15 +351,81 @@ public class WinAppSession : IDisposable
         switch (data.Script)
         {
             case "powerShell":
+                throw new NotImplementedException();
             case "windows: click":
+                ClickGesture(GestureRequestHelper.DeserializeGestureRequest<ClickGestureRequest>(data.Args));
+                break;
             case "windows: clickAndDrag":
+                DragAndDropGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args));
+                break;
             case "windows: hover":
+                HoverGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args));
+                break;
             case "windows: scroll":
             case "windows: setClipboard":
             case "windows: getClipboard":
                 throw new NotImplementedException();
             default:
                 throw new NotSupportedException($"Script '{data.Script}' is not supported. Supported gestures 'powerShell', 'windows: click', 'windows: clickAndDrag', 'windows: hover', 'windows: scroll', 'windows: setClipboard', 'windows: getClipboard'");
+        }
+
+        return null;
+    }
+    
+    /// <summary>
+    /// Type using keyboard. Modifier key is pressed until same key release it or is released at the end
+    /// </summary>
+    /// <param name="keys">Request with keys to type</param>
+    public void KeyboardType(KeyInputRequest keys)
+    {
+        var keyModifiers = new List<VirtualKeyShort>();
+        
+        foreach (var key in keys.Value)
+        {
+            var modifierKey = KeyboardHelper.GetModifierKey(key);
+            
+            if (modifierKey is not null)
+            {
+                // Press modifier key, if same key is present second time release it
+                if (keyModifiers.Contains(modifierKey.Value))
+                {
+                    _logger.LogDebug("Depressing key {Key}", modifierKey.Value.ToString());
+                    Keyboard.Release(modifierKey.Value);
+                    keyModifiers.Remove(modifierKey.Value);
+                }
+                else
+                {
+                    _logger.LogDebug("Pressing key {Key}", modifierKey.Value.ToString());
+                    Keyboard.Press(modifierKey.Value);
+                    keyModifiers.Add(modifierKey.Value);
+                }
+            }
+            else
+            {
+                //Null key - release all
+                if (key == '\uE000')
+                {
+                    ReleaseAll();
+                }
+                else
+                {
+                    Keyboard.Type(key);
+                }
+            }
+        }
+
+        ReleaseAll();
+        return;
+
+        //Release all modifier keys
+        void ReleaseAll()
+        {
+            foreach (var key in keyModifiers.Reverse<VirtualKeyShort>())
+            {
+                _logger.LogDebug("Depressing key {Key}", key.ToString());
+                Keyboard.Release(key);
+            }
+            keyModifiers.Clear();
         }
     }
     
@@ -340,7 +455,7 @@ public class WinAppSession : IDisposable
     {
         _elements.Clear();
         _application?.Dispose();
-        _automation?.Dispose();
+        _automation.Dispose();
     }
     
     private AutomationElement GetElement(Guid elementId)
@@ -351,5 +466,35 @@ public class WinAppSession : IDisposable
         }
 
         throw new ObjectNotFoundException($"Element with '{elementId}' not found");
+    }
+
+    private void ClickGesture(ClickGestureRequest data)
+    {
+        _logger.LogDebug("Click gesture x: {X}, y: {Y}, click times: {Times}, inter click delay: {InterClickDelay} ms", data.X, data.Y, data.Times, data.InterClickDelayMs);
+        
+        var button = data.MouseButton;
+        Mouse.MoveTo(data.X, data.Y);
+        
+        for (var i = 0; i < data.Times; i++)
+        {
+            Mouse.Down(button);
+            Mouse.Up(button);
+            Thread.Sleep(data.InterClickDelayMs);
+        }
+    }
+    
+    private void HoverGesture(MoveGestureRequest data)
+    {
+        _logger.LogDebug("Move to gesture x: {X}, y: {Y}", data.EndX, data.EndY);
+        Mouse.MoveTo(data.EndX, data.EndY);
+    }
+    
+    private void DragAndDropGesture(MoveGestureRequest data)
+    {
+        _logger.LogDebug("Drag and drop gesture startX: {StartX}, startY: {StartY}, endX: {EndX}, endY: {EndY}", data.StartX, data.StartY, data.EndX, data.EndY);
+        Mouse.MoveTo(data.StartX, data.StartY);
+        Mouse.Down();
+        Mouse.MoveTo(data.EndX, data.EndY);
+        Mouse.Up();
     }
 }
