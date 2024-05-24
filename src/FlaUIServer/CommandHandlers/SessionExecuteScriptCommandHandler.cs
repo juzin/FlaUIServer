@@ -11,6 +11,6 @@ public class SessionExecuteScriptCommandHandler(ISessionManager sessionManager) 
     public async Task<string> Handle(SessionExecuteScriptCommand request, CancellationToken cancellationToken)
     {
         var session = sessionManager.GetSession(request.SessionId);
-        return await Task.Run(() => session.ExecuteScript(request.Data), cancellationToken);
+        return await session.ExecuteScript(request.Data, cancellationToken);
     }
 }

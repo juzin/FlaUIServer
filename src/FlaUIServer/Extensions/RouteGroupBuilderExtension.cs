@@ -8,9 +8,6 @@ namespace FlaUIServer.Extensions;
 
 public static class RouteGroupBuilderExtension
 {
-    // TODO:
-    // Execute command gestures
-    // Keyboard actions
     public static RouteGroupBuilder MapSessionEndpoints(this RouteGroupBuilder groupBuilder)
     {
         ArgumentNullException.ThrowIfNull(groupBuilder);
@@ -33,6 +30,14 @@ public static class RouteGroupBuilderExtension
                     => await mediator.SendAndCreateResponse(new DeleteSessionCommand(sessionId), ct))
             .WithName("Close session")
             .Produces(200)
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
+        groupBuilder.MapDelete("/session/{sessionId}/source",
+                async ([FromRoute] Guid sessionId, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new SessionGetSourceCommand(sessionId), ct))
+            .WithName("Get app source")
+            .Produces<ResponseBase<string>>()
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         

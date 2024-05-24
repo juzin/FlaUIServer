@@ -1,5 +1,7 @@
-﻿using System.Drawing.Imaging;
-using FlaUI.Core;
+﻿using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Windows.Forms;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Definitions;
@@ -12,6 +14,7 @@ using FlaUIServer.Extensions;
 using FlaUIServer.Models;
 using FlaUIServer.Models.Gestures;
 using FlaUIServer.Helpers;
+using Application = FlaUI.Core.Application;
 
 namespace FlaUIServer.Session;
 
@@ -187,6 +190,7 @@ public class WinAppSession : IDisposable
     public void ElementCLick(Guid elementId)
     {
         var element = GetElement(elementId);
+        element.WaitUntilClickable();
         element.AsButton().Click();
     }
 
@@ -328,7 +332,7 @@ public class WinAppSession : IDisposable
     {
         var windows = _application.GetAllTopLevelWindows(_automation);
         var window = windows.FirstOrDefault(x => x.GetRuntimeId().Equals(name));
-
+        
         ActiveWindow = window ?? throw new ObjectNotFoundException($"Window with handle '{name}' not found");
     }
     
@@ -343,28 +347,32 @@ public class WinAppSession : IDisposable
     /// <summary>
     /// Executes script or gesture
     /// </summary>
-    /// <returns></returns>
-    public string ExecuteScript(ExecuteScriptRequest data)
+    /// <returns>Gesture result or null</returns>
+    public async Task<string> ExecuteScript(ExecuteScriptRequest data, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(data);
         
         switch (data.Script)
         {
             case "powerShell":
-                throw new NotImplementedException();
+                return await ExecutePowershell(GestureRequestHelper.DeserializeGestureRequest<PowerShellCommandRequest>(data.Args), ct);
             case "windows: click":
-                ClickGesture(GestureRequestHelper.DeserializeGestureRequest<ClickGestureRequest>(data.Args));
+                await Task.Run(() => ClickGesture(GestureRequestHelper.DeserializeGestureRequest<ClickGestureRequest>(data.Args)), ct);
                 break;
             case "windows: clickAndDrag":
-                DragAndDropGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args));
+                await Task.Run(() => DragAndDropGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args)), ct);
                 break;
             case "windows: hover":
-                HoverGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args));
+                await Task.Run(() => HoverGesture(GestureRequestHelper.DeserializeGestureRequest<MoveGestureRequest>(data.Args)), ct);
                 break;
             case "windows: scroll":
+                await Task.Run(() => ScrollGesture(GestureRequestHelper.DeserializeGestureRequest<ScrollGestureRequest>(data.Args)), ct);
+                break;
             case "windows: setClipboard":
+                await Task.Run(() => SetClipboard(GestureRequestHelper.DeserializeGestureRequest<ClipboardGestureRequest>(data.Args)), ct);
+                break;
             case "windows: getClipboard":
-                throw new NotImplementedException();
+                return await Task.Run(() => GetClipboard(GestureRequestHelper.DeserializeGestureRequest<ClipboardGestureRequest>(data.Args)), ct);
             default:
                 throw new NotSupportedException($"Script '{data.Script}' is not supported. Supported gestures 'powerShell', 'windows: click', 'windows: clickAndDrag', 'windows: hover', 'windows: scroll', 'windows: setClipboard', 'windows: getClipboard'");
         }
@@ -389,13 +397,13 @@ public class WinAppSession : IDisposable
                 // Press modifier key, if same key is present second time release it
                 if (keyModifiers.Contains(modifierKey.Value))
                 {
-                    _logger.LogDebug("Depressing key {Key}", modifierKey.Value.ToString());
+                    _logger.LogDebug("Release key {Key}", modifierKey.Value.ToString());
                     Keyboard.Release(modifierKey.Value);
                     keyModifiers.Remove(modifierKey.Value);
                 }
                 else
                 {
-                    _logger.LogDebug("Pressing key {Key}", modifierKey.Value.ToString());
+                    _logger.LogDebug("Press key {Key}", modifierKey.Value.ToString());
                     Keyboard.Press(modifierKey.Value);
                     keyModifiers.Add(modifierKey.Value);
                 }
@@ -422,7 +430,7 @@ public class WinAppSession : IDisposable
         {
             foreach (var key in keyModifiers.Reverse<VirtualKeyShort>())
             {
-                _logger.LogDebug("Depressing key {Key}", key.ToString());
+                _logger.LogDebug("Release key {Key}", key.ToString());
                 Keyboard.Release(key);
             }
             keyModifiers.Clear();
@@ -474,6 +482,7 @@ public class WinAppSession : IDisposable
         
         var button = data.MouseButton;
         Mouse.MoveTo(data.X, data.Y);
+        Wait.UntilInputIsProcessed();
         
         for (var i = 0; i < data.Times; i++)
         {
@@ -493,8 +502,134 @@ public class WinAppSession : IDisposable
     {
         _logger.LogDebug("Drag and drop gesture startX: {StartX}, startY: {StartY}, endX: {EndX}, endY: {EndY}", data.StartX, data.StartY, data.EndX, data.EndY);
         Mouse.MoveTo(data.StartX, data.StartY);
+        Wait.UntilInputIsProcessed();
         Mouse.Down();
+        Wait.UntilInputIsProcessed();
         Mouse.MoveTo(data.EndX, data.EndY);
+        Wait.UntilInputIsProcessed();
         Mouse.Up();
+        Wait.UntilInputIsProcessed();
+    }
+
+    private void ScrollGesture(ScrollGestureRequest data)
+    {
+        if (data.DeltaX is null && data.DeltaY is null)
+        {
+            throw new RequestValidationException("Body parameter DeltaX or DeltaY must be specified");
+        }
+        if (data.DeltaX is not null && data.DeltaY is not null)
+        {
+            throw new RequestValidationException("Only one body parameter DeltaX or DeltaY cab be specified");
+        }
+        
+        Mouse.MoveTo(data.X, data.Y);
+        Wait.UntilInputIsProcessed();
+
+        if (data.DeltaX is not null)
+        {
+            Mouse.Scroll(data.DeltaX.Value);
+            Wait.UntilInputIsProcessed();
+        }
+        else if(data.DeltaY is not null)
+        {
+            Mouse.HorizontalScroll(data.DeltaY.Value);
+            Wait.UntilInputIsProcessed();
+        }
+    }
+
+    private void SetClipboard(ClipboardGestureRequest data)
+    {
+        if (data.ContentType != "plaintext" 
+            || data.ContentType != "image")
+        {
+            throw new RequestValidationException($"Body parameter ContentType value must be either 'plaintext' or 'image', received '{data.ContentType}'");
+        }
+
+        if (data.ContentType == "plaintext")
+        {
+            Clipboard.SetText(data.B64Content);
+        }
+        else if (data.ContentType == "image")
+        {
+            if (data.B64Content is null)
+            {
+                throw new RequestValidationException("Body parameter B64Content is null");
+            }
+            var bytes = Convert.FromBase64String(data.B64Content);
+            using var ms = new MemoryStream(bytes);
+            using var image = Image.FromStream(ms);
+            Clipboard.SetImage(image);
+        }
+    }
+
+    private string GetClipboard(ClipboardGestureRequest data)
+    {
+        if (data.ContentType != "plaintext" 
+            || data.ContentType != "image")
+        {
+            throw new RequestValidationException($"Bo parameter ContentType value must be either 'plaintext' or 'image', received '{data.ContentType}'");
+        }
+
+        if (data.ContentType == "plaintext")
+        {
+            return Clipboard.GetText();
+        }
+        else
+        {
+            using var image = Clipboard.GetImage();
+            if (image is null)
+            {
+                return null;
+            }
+            
+            using var ms = new MemoryStream();
+            image.Save(ms,image.RawFormat);
+            
+            return Convert.ToBase64String(ms.ToArray());
+        }
+    }
+    
+    private async Task<string> ExecutePowershell(PowerShellCommandRequest ps, CancellationToken ct)
+    {
+        if (ps.Command is null && ps.Script is null)
+        {
+            throw new RequestValidationException("Body parameter Command or Script must be specified");
+        }
+
+        using var process = new Process();
+        
+        if (ps.Command is not null)
+        {
+            _logger.LogDebug("Executing powershell command: {Command}", ps.Command);
+            var processStartInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-Command \"{ps.Command.Replace("\"", "\\\"")}\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            };
+            
+            process.StartInfo = processStartInfo;
+            process.Start();
+
+            await process.WaitForExitAsync(ct);
+        
+            return await process.StandardOutput.ReadToEndAsync(ct);
+        }
+
+        const string scriptPath = "script.ps1";
+        await File.WriteAllTextAsync(scriptPath, ps.Script, ct);
+        _logger.LogDebug("Executing powershell script: {Script}", ps.Script);
+        
+        var processInfo = new ProcessStartInfo("powershell.exe", "-ExecutionPolicy Bypass -File \"" + scriptPath + "\"")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+            
+        process.StartInfo = processInfo;
+        process.Start();
+        await process.WaitForExitAsync(ct);
+        return await process.StandardOutput.ReadToEndAsync(ct);
     }
 }
