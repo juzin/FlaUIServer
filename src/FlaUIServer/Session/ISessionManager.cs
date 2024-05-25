@@ -8,8 +8,9 @@ public interface ISessionManager
     /// Create new session
     /// </summary>
     /// <param name="capabilities">Session capabilities</param>
+    /// <param name="loggerFactory">Logger factory</param>
     /// <returns>Session id</returns>
-    Guid CreateSession(Capabilities capabilities);
+    Guid CreateSession(Capabilities capabilities, ILoggerFactory loggerFactory);
     
     /// <summary>
     /// Delete existing session

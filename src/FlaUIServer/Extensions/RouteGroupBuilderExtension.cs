@@ -8,9 +8,6 @@ namespace FlaUIServer.Extensions;
 
 public static class RouteGroupBuilderExtension
 {
-    // TODO:
-    // Execute command gestures
-    // Keyboard actions
     public static RouteGroupBuilder MapSessionEndpoints(this RouteGroupBuilder groupBuilder)
     {
         ArgumentNullException.ThrowIfNull(groupBuilder);
@@ -36,6 +33,14 @@ public static class RouteGroupBuilderExtension
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         
+        groupBuilder.MapDelete("/session/{sessionId}/source",
+                async ([FromRoute] Guid sessionId, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new SessionGetSourceCommand(sessionId), ct))
+            .WithName("Get app source")
+            .Produces<ResponseBase<string>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
         groupBuilder.MapPost("/session/{sessionId}/window",
                 async ([FromRoute] Guid sessionId, [FromBody] SessionSwitchToWindowRequest window, IMediator mediator, CancellationToken ct) 
                     => await mediator.SendAndCreateResponse(new SessionWindowSwitchToCommand(sessionId, window), ct))
@@ -49,6 +54,14 @@ public static class RouteGroupBuilderExtension
                     => await mediator.SendAndCreateResponse(new SessionExecuteScriptCommand(sessionId, request), ct))
             .WithName("Execute script")
             .Produces<ResponseBase<string>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
+        groupBuilder.MapPost("/session/{sessionId}/keys",
+                async ([FromRoute] Guid sessionId, [FromBody] KeyInputRequest request, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new SessionKeyboardTypeCommand(sessionId, request), ct))
+            .WithName("Keyboard action")
+            .Produces(200)
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         
@@ -78,7 +91,7 @@ public static class RouteGroupBuilderExtension
             .Produces<ResponseBase<ErrorResponse>>(404);
         
         groupBuilder.MapPost("/session/{sessionId}/element/{elementId}/value",
-                async ([FromRoute] Guid sessionId, [FromRoute] Guid elementId, [FromBody] FillTextRequest text, IMediator mediator, CancellationToken ct) 
+                async ([FromRoute] Guid sessionId, [FromRoute] Guid elementId, [FromBody] KeyInputRequest text, IMediator mediator, CancellationToken ct) 
                     => await mediator.SendAndCreateResponse(new ElementFillTextCommand(sessionId, elementId, text), ct))
             .WithName("Element fill text")
             .Produces(200)

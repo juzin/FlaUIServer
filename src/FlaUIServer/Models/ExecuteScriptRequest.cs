@@ -1,3 +1,9 @@
-﻿namespace FlaUIServer.Models;
+﻿using System.Text.Json;
 
-public record ExecuteScriptRequest(string Script, string Args);
+namespace FlaUIServer.Models;
+
+public class ExecuteScriptRequest
+{
+    public string Script { get; set; }
+    public JsonElement[] Args { get; set; } = [];
+}

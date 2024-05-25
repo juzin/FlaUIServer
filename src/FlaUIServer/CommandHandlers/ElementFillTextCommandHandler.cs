@@ -4,7 +4,7 @@ using MediatR;
 
 namespace FlaUIServer.CommandHandlers;
 
-public record ElementFillTextCommand(Guid SessionId, Guid ElementId, FillTextRequest Text) : IRequest;
+public record ElementFillTextCommand(Guid SessionId, Guid ElementId, KeyInputRequest Text) : IRequest;
 
 public class ElementFillTextCommandHandler(ISessionManager sessionManager) : IRequestHandler<ElementFillTextCommand>
 {

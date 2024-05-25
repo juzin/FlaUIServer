@@ -9,9 +9,9 @@ public class SessionManager : ISessionManager
     private readonly ConcurrentDictionary<Guid, WinAppSession> _sessions = new ();
 
     /// <inheritdoc />
-    public Guid CreateSession(Capabilities capabilities)
+    public Guid CreateSession(Capabilities capabilities, ILoggerFactory loggerFactory)
     {
-        var sessionData = new WinAppSession(capabilities);
+        var sessionData = new WinAppSession(capabilities, loggerFactory);
 
         _sessions[sessionData.SessionId] = sessionData;
         return sessionData.SessionId;

@@ -2,4 +2,4 @@
 
 namespace FlaUIServer.Models;
 
-public record ErrorResponse(string Error, string Message,[property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string StackTrace);
+public record ErrorResponse(string Error, string Message,[property: JsonIgnore] string StackTrace);
