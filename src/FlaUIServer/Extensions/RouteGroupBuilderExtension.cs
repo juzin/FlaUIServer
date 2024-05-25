@@ -74,6 +74,22 @@ public static class RouteGroupBuilderExtension
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         
+        groupBuilder.MapPost("/session/{sessionId}/element/{elementId}/element",
+                async ([FromRoute] Guid sessionId,[FromRoute] Guid elementId, [FromBody] FindElementRequest searchOptions, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new ElementFindElementCommand(sessionId, elementId, searchOptions), ct))
+            .WithName("Find element in parent element")
+            .Produces<ResponseBase<FindElementResponse>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
+        groupBuilder.MapPost("/session/{sessionId}/element/{elementId}/elements",
+                async ([FromRoute] Guid sessionId, [FromRoute] Guid elementId, [FromBody] FindElementRequest searchOptions, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new ElementFindElementsCommand(sessionId, elementId, searchOptions), ct))
+            .WithName("Find elements in parent element")
+            .Produces<ResponseBase<Guid[]>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
         groupBuilder.MapPost("/session/{sessionId}/elements",
                 async ([FromRoute] Guid sessionId, [FromBody] FindElementRequest searchOptions, IMediator mediator, CancellationToken ct) 
                     => await mediator.SendAndCreateResponse(new FindElementsCommand(sessionId, searchOptions), ct))
