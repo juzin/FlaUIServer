@@ -24,45 +24,40 @@ namespace FlaUIServer.Session;
 public class WinAppSession : IDisposable
 {
     private readonly ILogger<WinAppSession> _logger;
+    private readonly bool _isRootSession;
     private readonly UIA3Automation _automation;
     private readonly Application _application;
     private readonly Dictionary<Guid, AutomationElement> _elements = [];
     private Window _activeWindow;
 
     /// <summary>
-    /// Session id
-    /// </summary>
-    public Guid SessionId { get; }
-
-    /// <summary>
     /// Active window
     /// </summary>
-    public Window ActiveWindow
+    private Window ActiveWindow
     {
         get
         {
+            if (_activeWindow is not null) return _activeWindow;
+         
             // In case window is null return application main window
-            if (_activeWindow is null)
+            if (_isRootSession)
             {
-                if (IsRootSession)
-                {
-                    _automation.GetDesktop().AsWindow();
-                }
-                else
-                {
-                    _activeWindow = _application.GetMainWindow(_automation);
-                }
+                _automation.GetDesktop().AsWindow();
+            }
+            else
+            {
+                _activeWindow = _application.GetMainWindow(_automation);
             }
             return _activeWindow;
         }
-        private set
-        {
-            _activeWindow = value;
-        }
+        set => _activeWindow = value;
     }
     
-    public bool IsRootSession { get; }
-
+    /// <summary>
+    /// Session id
+    /// </summary>
+    public Guid SessionId { get; }
+    
     /// <summary>
     /// Date and time of session creation
     /// </summary>
@@ -86,7 +81,6 @@ public class WinAppSession : IDisposable
         _logger = loggerFactory.CreateLogger<WinAppSession>();
         _automation = new UIA3Automation();
         
-        
         if (capabilities.AlwaysMatch.ApplicationTopLevelWindow is not null)
         {
             _application = Application.Attach(Convert.ToInt32(capabilities.AlwaysMatch.ApplicationTopLevelWindow, 16));
@@ -95,18 +89,17 @@ public class WinAppSession : IDisposable
         {
             _application = null;
             ActiveWindow = _automation.GetDesktop().AsWindow();
-            IsRootSession = true;
+            _isRootSession = true;
         }
         else
         {
             _application = Application.Launch(capabilities.AlwaysMatch.Application);
             ActiveWindow = _application.GetMainWindow(_automation);
-            IsRootSession = false;
+            _isRootSession = false;
         }
         
         Created = DateTimeOffset.Now;
         SessionId = Guid.NewGuid();
-        
         LastActionAt = DateTimeOffset.Now;
     }
 
@@ -445,7 +438,7 @@ public class WinAppSession : IDisposable
     /// </summary>
     public void Close()
     {
-        if (!IsRootSession && _application != null && !_application.HasExited)
+        if (!_isRootSession && _application != null && !_application.HasExited)
         {
             _application.Close();
         }
@@ -473,7 +466,7 @@ public class WinAppSession : IDisposable
     
     #region Private Members
 
-    private AutomationElement FindAutomationElement(AutomationElement parent, FindElementRequest searchParams)
+    private static AutomationElement FindAutomationElement(AutomationElement parent, FindElementRequest searchParams)
     {
         return searchParams.FindBy switch
         {
@@ -487,7 +480,7 @@ public class WinAppSession : IDisposable
         };
     }
 
-    private AutomationElement[] FindAutomationElements(AutomationElement parent, FindElementRequest searchParams)
+    private static AutomationElement[] FindAutomationElements(AutomationElement parent, FindElementRequest searchParams)
     {
         return searchParams.FindBy switch
         {

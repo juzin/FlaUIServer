@@ -20,15 +20,20 @@ public class SessionManager : ISessionManager
     /// <inheritdoc />
     public void DeleteSession(Guid sessionId)
     {
-        var session = GetSession(sessionId);
-        try
+        if (_sessions.TryRemove(sessionId, out var session))
         {
-            session.Close();
+            try
+            {
+                session.Close();
+            }
+            finally
+            {
+                session.Dispose();
+            }
         }
-        finally
+        else
         {
-            _sessions.Remove(sessionId, out _);
-            session.Dispose();
+            throw new ObjectNotFoundException($"Session with id '{sessionId}' was not found");
         }
     }
     
