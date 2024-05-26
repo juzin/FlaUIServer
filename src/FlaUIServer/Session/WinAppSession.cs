@@ -331,6 +331,15 @@ public class WinAppSession : IDisposable
         
         ActiveWindow = window ?? throw new ObjectNotFoundException($"Window with handle '{name}' not found");
     }
+
+    /// <summary>
+    /// Get application source xml
+    /// </summary>
+    /// <returns>Xml representation of application source</returns>
+    public string WindowGetSource()
+    {
+        return ActiveWindow.ToXml();
+    }
     
     /// <summary>
     /// Close window session
@@ -650,21 +659,37 @@ public class WinAppSession : IDisposable
         
             return await process.StandardOutput.ReadToEndAsync(ct);
         }
-
-        const string scriptPath = "script.ps1";
-        await File.WriteAllTextAsync(scriptPath, ps.Script, ct);
-        _logger.LogDebug("Executing powershell script: {Script}", ps.Script);
         
-        var processInfo = new ProcessStartInfo("powershell.exe", "-ExecutionPolicy Bypass -File \"" + scriptPath + "\"")
+
+        var scriptPath = $"{SessionId}.ps1";
+
+        try
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-            
-        process.StartInfo = processInfo;
-        process.Start();
-        await process.WaitForExitAsync(ct);
-        return await process.StandardOutput.ReadToEndAsync(ct);
+            await File.WriteAllTextAsync(scriptPath, ps.Script, ct);
+            _logger.LogDebug("Executing powershell script: {Script}", ps.Script);
+
+            var processInfo =
+                new ProcessStartInfo("powershell.exe", "-ExecutionPolicy Bypass -File \"" + scriptPath + "\"")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+            process.StartInfo = processInfo;
+            process.Start();
+            await process.WaitForExitAsync(ct);
+            return await process.StandardOutput.ReadToEndAsync(ct);
+
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Failed to execute powershell script. {Exception}", e);
+            throw;
+        }
+        finally
+        {
+            File.Delete(scriptPath);
+        }
     }
     
     #endregion
