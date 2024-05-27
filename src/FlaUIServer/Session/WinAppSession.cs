@@ -338,7 +338,7 @@ public class WinAppSession : IDisposable
     /// <returns>Xml representation of application source</returns>
     public string WindowGetSource()
     {
-        return ActiveWindow.ToXml();
+        return $"<?xml version=\"1.0\" encoding=\"utf-16\"?>{ActiveWindow.ToXml()}";
     }
     
     /// <summary>
