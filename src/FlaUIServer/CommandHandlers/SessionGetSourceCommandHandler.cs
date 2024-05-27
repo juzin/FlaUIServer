@@ -9,8 +9,7 @@ public class SessionGetSourceCommandHandler(ISessionManager sessionManager) : IR
 {
     public async Task<string> Handle(SessionGetSourceCommand request, CancellationToken cancellationToken)
     {
-        // Just to validate session exists
-        _ = sessionManager.GetSession(request.SessionId);
-        return await Task.Run(() =>"Get of application source is not supported", cancellationToken);
+        var session = sessionManager.GetSession(request.SessionId);
+        return await Task.Run(() => session.WindowGetSource(), cancellationToken);
     }
 }

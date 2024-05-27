@@ -33,7 +33,7 @@ public static class RouteGroupBuilderExtension
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         
-        groupBuilder.MapDelete("/session/{sessionId}/source",
+        groupBuilder.MapGet("/session/{sessionId}/source",
                 async ([FromRoute] Guid sessionId, IMediator mediator, CancellationToken ct) 
                     => await mediator.SendAndCreateResponse(new SessionGetSourceCommand(sessionId), ct))
             .WithName("Get app source")
@@ -71,6 +71,22 @@ public static class RouteGroupBuilderExtension
                 => await mediator.SendAndCreateResponse(new FindElementCommand(sessionId, searchOptions), ct))
             .WithName("Find element")
             .Produces<ResponseBase<FindElementResponse>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
+        groupBuilder.MapPost("/session/{sessionId}/element/{elementId}/element",
+                async ([FromRoute] Guid sessionId,[FromRoute] Guid elementId, [FromBody] FindElementRequest searchOptions, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new ElementFindElementCommand(sessionId, elementId, searchOptions), ct))
+            .WithName("Find element in parent element")
+            .Produces<ResponseBase<FindElementResponse>>()
+            .Produces<ResponseBase<ErrorResponse>>(400)
+            .Produces<ResponseBase<ErrorResponse>>(404);
+        
+        groupBuilder.MapPost("/session/{sessionId}/element/{elementId}/elements",
+                async ([FromRoute] Guid sessionId, [FromRoute] Guid elementId, [FromBody] FindElementRequest searchOptions, IMediator mediator, CancellationToken ct) 
+                    => await mediator.SendAndCreateResponse(new ElementFindElementsCommand(sessionId, elementId, searchOptions), ct))
+            .WithName("Find elements in parent element")
+            .Produces<ResponseBase<Guid[]>>()
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         

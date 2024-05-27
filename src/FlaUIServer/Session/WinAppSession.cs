@@ -24,45 +24,40 @@ namespace FlaUIServer.Session;
 public class WinAppSession : IDisposable
 {
     private readonly ILogger<WinAppSession> _logger;
+    private readonly bool _isRootSession;
     private readonly UIA3Automation _automation;
     private readonly Application _application;
     private readonly Dictionary<Guid, AutomationElement> _elements = [];
     private Window _activeWindow;
 
     /// <summary>
-    /// Session id
-    /// </summary>
-    public Guid SessionId { get; }
-
-    /// <summary>
     /// Active window
     /// </summary>
-    public Window ActiveWindow
+    private Window ActiveWindow
     {
         get
         {
+            if (_activeWindow is not null) return _activeWindow;
+         
             // In case window is null return application main window
-            if (_activeWindow is null)
+            if (_isRootSession)
             {
-                if (IsRootSession)
-                {
-                    _automation.GetDesktop().AsWindow();
-                }
-                else
-                {
-                    _activeWindow = _application.GetMainWindow(_automation);
-                }
+                _automation.GetDesktop().AsWindow();
+            }
+            else
+            {
+                _activeWindow = _application.GetMainWindow(_automation);
             }
             return _activeWindow;
         }
-        private set
-        {
-            _activeWindow = value;
-        }
+        set => _activeWindow = value;
     }
     
-    public bool IsRootSession { get; }
-
+    /// <summary>
+    /// Session id
+    /// </summary>
+    public Guid SessionId { get; }
+    
     /// <summary>
     /// Date and time of session creation
     /// </summary>
@@ -86,7 +81,6 @@ public class WinAppSession : IDisposable
         _logger = loggerFactory.CreateLogger<WinAppSession>();
         _automation = new UIA3Automation();
         
-        
         if (capabilities.AlwaysMatch.ApplicationTopLevelWindow is not null)
         {
             _application = Application.Attach(Convert.ToInt32(capabilities.AlwaysMatch.ApplicationTopLevelWindow, 16));
@@ -95,45 +89,25 @@ public class WinAppSession : IDisposable
         {
             _application = null;
             ActiveWindow = _automation.GetDesktop().AsWindow();
-            IsRootSession = true;
+            _isRootSession = true;
         }
         else
         {
             _application = Application.Launch(capabilities.AlwaysMatch.Application);
             ActiveWindow = _application.GetMainWindow(_automation);
-            IsRootSession = false;
+            _isRootSession = false;
         }
         
         Created = DateTimeOffset.Now;
         SessionId = Guid.NewGuid();
-        
         LastActionAt = DateTimeOffset.Now;
     }
 
+    #region Public Members
+    
     public Guid FindElement(FindElementRequest searchParams)
     {
-        var elementId = Guid.NewGuid();
-        AutomationElement element = null;
-
-        switch (searchParams.FindBy)
-        {
-            case FindBy.AutomationId:
-                element = ActiveWindow.FindFirstDescendant(x => x.ByAutomationId(searchParams.Value));
-                break;
-            case FindBy.ClassName:
-                element = ActiveWindow.FindFirstDescendant(x => x.ByClassName(searchParams.Value));
-                break;
-            case FindBy.TagName:
-                element = ActiveWindow.FindFirstDescendant(x =>
-                    x.ByControlType(Enum.Parse<ControlType>(searchParams.Value)));
-                break;
-            case FindBy.Name:
-                element = ActiveWindow.FindFirstDescendant(x => x.ByName(searchParams.Value));
-                break;
-            case FindBy.Xpath:
-                element = ActiveWindow.FindFirstByXPath(searchParams.Value);
-                break;
-        }
+        var element = FindAutomationElement(ActiveWindow, searchParams);
 
         if (element is null)
         {
@@ -141,42 +115,41 @@ public class WinAppSession : IDisposable
                 $"Element by '{searchParams.Using}' value '{searchParams.Value}' not found");
         }
 
+        var elementId = Guid.NewGuid();
+        _elements[elementId] = element;
+
+        return elementId;
+    }
+    
+    public Guid ElementFindElement(Guid parentElementId, FindElementRequest searchParams)
+    {
+        var parentElement = GetElement(parentElementId);
+        var element = FindAutomationElement(parentElement, searchParams);
+
+        if (element is null)
+        {
+            throw new ObjectNotFoundException(
+                $"Element by '{searchParams.Using}' value '{searchParams.Value}' not found in parent element id '{parentElementId}'");
+        }
+
+        var elementId = Guid.NewGuid();
         _elements[elementId] = element;
 
         return elementId;
     }
 
-    public Guid[] FindElements(FindElementRequest findElement)
+    public Guid[] FindElements(FindElementRequest searchParams)
     {
-        List<Guid> elementIds = new();
-        AutomationElement[] elements = null;
+        var elements = FindAutomationElements(ActiveWindow, searchParams);
 
-        switch (findElement.FindBy)
-        {
-            case FindBy.AutomationId:
-                elements = ActiveWindow.FindAllDescendants(x => x.ByAutomationId(findElement.Value));
-                break;
-            case FindBy.ClassName:
-                elements = ActiveWindow.FindAllDescendants(x => x.ByClassName(findElement.Value));
-                break;
-            case FindBy.TagName:
-                elements = ActiveWindow.FindAllDescendants(x =>
-                    x.ByControlType(Enum.Parse<ControlType>(findElement.Value)));
-                break;
-            case FindBy.Name:
-                elements = ActiveWindow.FindAllDescendants(x => x.ByName(findElement.Value));
-                break;
-            case FindBy.Xpath:
-                elements = ActiveWindow.FindAllByXPath(findElement.Value);
-                break;
-        }
-
-        if (elements is null || elements.Length == 0)
+        if (elements.Length == 0)
         {
             throw new ObjectNotFoundException(
-                $"Elements by '{findElement.Using}' value '{findElement.Value}' not found");
+                $"Elements by '{searchParams.Using}' value '{searchParams.Value}' not found");
         }
 
+        List<Guid> elementIds = [];
+        
         foreach (var element in elements)
         {
             var elementId = Guid.NewGuid();
@@ -187,6 +160,29 @@ public class WinAppSession : IDisposable
         return elementIds.ToArray();
     }
 
+    public Guid[] ElementFindElements(Guid parentElementId, FindElementRequest findElement)
+    {
+        var parentElement = GetElement(parentElementId);
+        var elements = FindAutomationElements(parentElement, findElement);
+
+        if (elements.Length == 0)
+        {
+            throw new ObjectNotFoundException(
+                $"Elements by '{findElement.Using}' value '{findElement.Value}' not found in parent element id {parentElementId}");
+        }
+
+        List<Guid> elementIds = [];
+        
+        foreach (var element in elements)
+        {
+            var elementId = Guid.NewGuid();
+            elementIds.Add(elementId);
+            _elements[elementId] = element;
+        }
+
+        return elementIds.ToArray();
+    }
+    
     public void ElementCLick(Guid elementId)
     {
         var element = GetElement(elementId);
@@ -335,6 +331,15 @@ public class WinAppSession : IDisposable
         
         ActiveWindow = window ?? throw new ObjectNotFoundException($"Window with handle '{name}' not found");
     }
+
+    /// <summary>
+    /// Get application source xml
+    /// </summary>
+    /// <returns>Xml representation of application source</returns>
+    public string WindowGetSource()
+    {
+        return $"<?xml version=\"1.0\" encoding=\"utf-16\"?>{ActiveWindow.ToXml()}";
+    }
     
     /// <summary>
     /// Close window session
@@ -442,7 +447,7 @@ public class WinAppSession : IDisposable
     /// </summary>
     public void Close()
     {
-        if (!IsRootSession && _application != null && !_application.HasExited)
+        if (!_isRootSession && _application != null && !_application.HasExited)
         {
             _application.Close();
         }
@@ -465,7 +470,45 @@ public class WinAppSession : IDisposable
         _application?.Dispose();
         _automation.Dispose();
     }
+
+    #endregion
     
+    #region Private Members
+
+    private static AutomationElement FindAutomationElement(AutomationElement parent, FindElementRequest searchParams)
+    {
+        return searchParams.FindBy switch
+        {
+            FindBy.AutomationId => parent.FindFirstDescendant(x => x.ByAutomationId(searchParams.Value)),
+            FindBy.ClassName => parent.FindFirstDescendant(x => x.ByClassName(searchParams.Value)),
+            FindBy.TagName => parent.FindFirstDescendant(x => x.ByControlType(Enum.Parse<ControlType>(searchParams.Value))),
+            FindBy.Name => parent.FindFirstDescendant(x => x.ByName(searchParams.Value)),
+            FindBy.Xpath => parent.FindFirstByXPath(searchParams.Value),
+            _ => throw new NotSupportedException(
+                $"Find by '{searchParams.FindBy}' is not supported, supported strategies are 'AutomationId', 'ClassName', 'TagName', 'Name', 'Xpath'")
+        };
+    }
+
+    private static AutomationElement[] FindAutomationElements(AutomationElement parent, FindElementRequest searchParams)
+    {
+        return searchParams.FindBy switch
+        {
+            FindBy.AutomationId => parent.FindAllDescendants(x => x.ByAutomationId(searchParams.Value)),
+            FindBy.ClassName => parent.FindAllDescendants(x => x.ByClassName(searchParams.Value)),
+            FindBy.TagName => parent.FindAllDescendants(x => x.ByControlType(Enum.Parse<ControlType>(searchParams.Value))),
+            FindBy.Name => parent.FindAllDescendants(x => x.ByName(searchParams.Value)),
+            FindBy.Xpath => parent.FindAllByXPath(searchParams.Value),
+            _ => throw new NotSupportedException(
+                $"Find by '{searchParams.FindBy}' is not supported, supported strategies are 'AutomationId', 'ClassName', 'TagName', 'Name', 'Xpath'")
+        };
+    }
+    
+    /// <summary>
+    /// Get element from collection by id
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>ELement</returns>
+    /// <exception cref="ObjectNotFoundException">When element is not found in collection</exception>
     private AutomationElement GetElement(Guid elementId)
     {
         if (_elements.TryGetValue(elementId, out var element))
@@ -616,20 +659,38 @@ public class WinAppSession : IDisposable
         
             return await process.StandardOutput.ReadToEndAsync(ct);
         }
-
-        const string scriptPath = "script.ps1";
-        await File.WriteAllTextAsync(scriptPath, ps.Script, ct);
-        _logger.LogDebug("Executing powershell script: {Script}", ps.Script);
         
-        var processInfo = new ProcessStartInfo("powershell.exe", "-ExecutionPolicy Bypass -File \"" + scriptPath + "\"")
+
+        var scriptPath = $"{SessionId}.ps1";
+
+        try
         {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true
-        };
-            
-        process.StartInfo = processInfo;
-        process.Start();
-        await process.WaitForExitAsync(ct);
-        return await process.StandardOutput.ReadToEndAsync(ct);
+            await File.WriteAllTextAsync(scriptPath, ps.Script, ct);
+            _logger.LogDebug("Executing powershell script: {Script}", ps.Script);
+
+            var processInfo =
+                new ProcessStartInfo("powershell.exe", "-ExecutionPolicy Bypass -File \"" + scriptPath + "\"")
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+            process.StartInfo = processInfo;
+            process.Start();
+            await process.WaitForExitAsync(ct);
+            return await process.StandardOutput.ReadToEndAsync(ct);
+
+        }
+        catch (Exception e)
+        {
+            _logger.LogError("Failed to execute powershell script. {Exception}", e);
+            throw;
+        }
+        finally
+        {
+            File.Delete(scriptPath);
+        }
     }
+    
+    #endregion
 }
