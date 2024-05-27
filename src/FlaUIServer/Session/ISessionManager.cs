@@ -30,4 +30,10 @@ public interface ISessionManager
     /// </summary>
     /// <returns>Array of existing sessions information</returns>
     SessionInfo[] GetSessions();
+    
+    /// <summary>
+    /// Close and removes session which are not active
+    /// </summary>
+    /// <returns>Array of removed sessions</returns>
+    Guid[] RemoveInactive();
 }

@@ -1,6 +1,7 @@
 using FlaUIServer.Extensions;
 using FlaUIServer.Helpers;
 using FlaUIServer.Middlewares;
+using FlaUIServer.Services;
 using Serilog;
 
 // TODO: Command line configuration
@@ -18,6 +19,7 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Add required services to the container
 builder.AddServices();
+builder.Services.AddHostedService<OrphanedSessionCleanupService>();
 
 var app = builder.Build();
 
