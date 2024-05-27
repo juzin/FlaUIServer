@@ -33,7 +33,7 @@ public static class RouteGroupBuilderExtension
             .Produces<ResponseBase<ErrorResponse>>(400)
             .Produces<ResponseBase<ErrorResponse>>(404);
         
-        groupBuilder.MapDelete("/session/{sessionId}/source",
+        groupBuilder.MapGet("/session/{sessionId}/source",
                 async ([FromRoute] Guid sessionId, IMediator mediator, CancellationToken ct) 
                     => await mediator.SendAndCreateResponse(new SessionGetSourceCommand(sessionId), ct))
             .WithName("Get app source")

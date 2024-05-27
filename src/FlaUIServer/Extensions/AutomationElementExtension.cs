@@ -6,6 +6,23 @@ namespace FlaUIServer.Extensions;
 
 public static class AutomationElementExtension
 {
+    /// <summary>
+    /// Get runtime id as string
+    /// </summary>
+    /// <param name="window">Window</param>
+    /// <returns>Runtime id as string</returns>
+    public static string GetRuntimeId(this AutomationElement window)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        
+        if (window.Properties.RuntimeId.TryGetValue(out var runtimeId))
+        {
+            return string.Join(string.Empty, runtimeId);
+        }
+
+        return null;
+    }
+    
     public static bool TryGetProperty(this AutomationElement element, string propertyName, out object value)
     {
         var library = element.FrameworkAutomationElement.PropertyIdLibrary;
@@ -21,6 +38,11 @@ public static class AutomationElementExtension
         return false;
     }
     
+    /// <summary>
+    /// Traverse through all elements and create xml structure
+    /// </summary>
+    /// <param name="element">Parent element</param>
+    /// <returns>xml representation of elements structure</returns>
     public static string ToXml(this AutomationElement element)
     {
         ArgumentNullException.ThrowIfNull(element);
@@ -31,7 +53,7 @@ public static class AutomationElementExtension
 
         if (descendants.Any())
         {
-            sb.Append($"<{element.Properties.ControlType}  {GetElementProperties(element)}>");
+            sb.Append($"<?xml version=\"1.0\" encoding=\"utf-16\"?><{element.Properties.ControlType}{GetElementProperties(element)}>");
             foreach (var descendant in descendants)
             {
                 sb.Append(descendant.ToXml());
@@ -40,7 +62,7 @@ public static class AutomationElementExtension
         }
         else
         {
-            sb.Append($"<{element.Properties.ControlType} {GetElementProperties(element)}/>");
+            sb.Append($"<{element.Properties.ControlType}{GetElementProperties(element)} />");
         }
         
         return sb.ToString();
@@ -54,17 +76,26 @@ public static class AutomationElementExtension
         {
             sb.Append($" AutomationId=\"{element.Properties.AutomationId.Value}\"");
         }
-        if (element.Properties.Name.IsSupported)
-        {
-            sb.Append($" Name=\"{element.Properties.Name.Value}\"");
-        }
         if (element.Properties.ClassName.IsSupported)
         {
             sb.Append($" ClassName=\"{element.Properties.ClassName.Value}\"");
         }
+        if (element.Properties.Name.IsSupported)
+        {
+            sb.Append($" Name=\"{element.Properties.Name.Value}\"");
+        }
+        
+        sb.Append($" AcceleratorKey=\"{element.Properties.AcceleratorKey.ValueOrDefault}\"");
+        sb.Append($" AccessKey=\"{element.Properties.AccessKey.ValueOrDefault}\"");
+        sb.Append($" FrameworkId=\"{element.Properties.FrameworkId.ValueOrDefault}\"");
+        sb.Append($" HasKeyboardFocus=\"{element.Properties.HasKeyboardFocus.ValueOrDefault}\"");
+        sb.Append($" IsControlElement=\"{element.Properties.IsControlElement.ValueOrDefault}\"");
+        sb.Append($" IsContentElement=\"{element.Properties.IsContentElement.ValueOrDefault}\"");
+        sb.Append($" HelpText=\"{element.Properties.HelpText.ValueOrDefault}\"");
+        
         if (element.Properties.RuntimeId.IsSupported)
         {
-            sb.Append($" RuntimeId=\"{element.Properties.RuntimeId.Value}\"");
+            sb.Append($" RuntimeId=\"{element.GetRuntimeId()}\"");
         }
         if (element.Properties.IsEnabled.IsSupported)
         {
@@ -84,7 +115,7 @@ public static class AutomationElementExtension
         }
         if (element.Properties.BoundingRectangle.IsSupported)
         {
-            sb.Append($" Width=\"{element.Properties.BoundingRectangle.Value.Width}\" Height=\"{element.Properties.BoundingRectangle.Value.Height}\" X=\"{element.Properties.BoundingRectangle.Value.X}\" Y=\"{element.Properties.BoundingRectangle.Value.Y}\"");
+            sb.Append($" x=\"{element.Properties.BoundingRectangle.Value.X}\" y=\"{element.Properties.BoundingRectangle.Value.Y}\" width=\"{element.Properties.BoundingRectangle.Value.Width}\" height=\"{element.Properties.BoundingRectangle.Value.Height}\"");
         }
         
         return sb.ToString();
