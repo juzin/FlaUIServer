@@ -4,7 +4,7 @@ using FlaUIServer.Middlewares;
 using FlaUIServer.Services;
 using Serilog;
 
-// --urls= --cleanup-cycle= --use-swagger --allow-powershell --log-response-body
+// --urls= --cleanup-cycle=90 --use-swagger --allow-powershell --log-response-body
 var options = CommandLineArgumentsHelper.ParseArguments(args);
 var builder = WebApplication.CreateBuilder(args);
 
