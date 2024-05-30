@@ -25,7 +25,7 @@ public class OrphanedSessionCleanupService(ISessionManager sessionManager, ILogg
 
         foreach (var sessionId in deleted)
         {
-            logger.LogInformation("Orphaned session cleaning service removed inactive session '{SessionId}'", sessionId);
+            logger.LogInformation("Cleaning service removed inactive session '{SessionId}'", sessionId);
         }
     }
     

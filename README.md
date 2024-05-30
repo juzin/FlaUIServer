@@ -6,3 +6,13 @@ Compatible API with [Appium Windows Driver](https://github.com/appium/appium-win
 
 Not all endpoints implemented.
 
+## Run server
+
+.\FlaUIServer.exe --urls=http://127.0.0.1:4723 --log-response-body --use-swagger
+
+Additional arguments:
+
+--use-swagger - Enables swagger by default is disabled
+--allow-powershell - Allows powershell execution by default is disabled
+--log-response-body  - Enables logging of request/response body to console
+

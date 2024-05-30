@@ -25,6 +25,7 @@ public class WinAppSession : IDisposable
 {
     private readonly ILogger<WinAppSession> _logger;
     private readonly bool _isRootSession;
+    private readonly ServerOptions _options;
     private readonly UIA3Automation _automation;
     private readonly Application _application;
     private readonly Dictionary<Guid, AutomationElement> _elements = [];
@@ -73,12 +74,14 @@ public class WinAppSession : IDisposable
     /// </summary>
     /// <param name="capabilities">Session capabilities</param>
     /// <param name="loggerFactory">Logger factory</param>
-    public WinAppSession(Capabilities capabilities, ILoggerFactory loggerFactory)
+    public WinAppSession(Capabilities capabilities, ILoggerFactory loggerFactory, ServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
         ArgumentNullException.ThrowIfNull(loggerFactory);
+        ArgumentNullException.ThrowIfNull(options);
         
         _logger = loggerFactory.CreateLogger<WinAppSession>();
+        _options = options;
         _automation = new UIA3Automation();
         
         if (capabilities.AlwaysMatch.ApplicationTopLevelWindow is not null)
@@ -634,6 +637,11 @@ public class WinAppSession : IDisposable
     
     private async Task<string> ExecutePowershell(PowerShellCommandRequest ps, CancellationToken ct)
     {
+        if (!_options.AllowPowershell)
+        {
+            throw new Exception("Executing of powershell is disabled. Start server with '--allow-powershell' argument to enable powershell execution");
+        }
+        
         if (ps.Command is null && ps.Script is null)
         {
             throw new RequestValidationException("Body parameter Command or Script must be specified");

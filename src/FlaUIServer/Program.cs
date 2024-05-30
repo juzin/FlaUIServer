@@ -4,13 +4,10 @@ using FlaUIServer.Middlewares;
 using FlaUIServer.Services;
 using Serilog;
 
-// TODO: Command line configuration
-// Urls, if not specified map all interfaces default port 4723
-// Enable disable swagger
-// Enable disable request/response body logging
-// Specify url base path where default is /wd/hub
-
+// --urls= --use-swagger --allow-powershell --log-response-body
+var options = CommandLineArgumentsHelper.ParseArguments(args);
 var builder = WebApplication.CreateBuilder(args);
+
 // Configure logging
 builder.Host.UseSerilog((context, configuration) =>
 {
@@ -18,21 +15,28 @@ builder.Host.UseSerilog((context, configuration) =>
 });
 
 // Add required services to the container
-builder.AddServices();
+builder.AddServices(options);
 builder.Services.AddHostedService<OrphanedSessionCleanupService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || options.UseSwagger)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    options.UseSwagger = true;
 }
 
 // Use request/response body logging middleware
-app.UseMiddleware<RequestLoggingMiddleware>();
-// Or use app.UseSerilogRequestLogging()
+if (options.LogResponseBody)
+{
+    app.UseMiddleware<RequestLoggingMiddleware>();
+}
+else
+{
+    app.UseSerilogRequestLogging();
+}
 
 // Map minimal api endpoints
 app.MapGroup("/wd/hub")
@@ -45,6 +49,6 @@ app.MapGroup("")
 
 // Log server start
 ServerStartConsoleHelper.WriteLogo();
-app.Logger.LogInformation("Starting FlaUI Server, listening at url: {Urls}", Environment.GetEnvironmentVariable("ASPNETCORE_URLS"));
+ServerStartConsoleHelper.LogServerOptions(app.Logger, options);
 
 app.Run();

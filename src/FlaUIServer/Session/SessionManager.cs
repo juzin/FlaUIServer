@@ -4,7 +4,7 @@ using FlaUIServer.Models;
 
 namespace FlaUIServer.Session;
 
-public class SessionManager : ISessionManager
+public class SessionManager(ServerOptions options) : ISessionManager
 {
     private const int InactiveTimeout = 90;
     private readonly ConcurrentDictionary<Guid, WinAppSession> _sessions = new ();
@@ -12,7 +12,7 @@ public class SessionManager : ISessionManager
     /// <inheritdoc />
     public Guid CreateSession(Capabilities capabilities, ILoggerFactory loggerFactory)
     {
-        var sessionData = new WinAppSession(capabilities, loggerFactory);
+        var sessionData = new WinAppSession(capabilities, loggerFactory, options);
 
         _sessions[sessionData.SessionId] = sessionData;
         return sessionData.SessionId;
