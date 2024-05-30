@@ -27,7 +27,7 @@ public static class CommandLineArgumentsHelper
         
         foreach (var argument in args)
         {
-            if (argument.StartsWith("--urls"))
+            if (argument.StartsWith("--urls="))
             {
                 var urls = argument.Split('=');
                 if (urls.Length > 1)
@@ -36,6 +36,15 @@ public static class CommandLineArgumentsHelper
                     {
                         options.Urls.Add(url);
                     }
+                }
+            }
+            else if (argument.StartsWith("--cleanup-cycle="))
+            {
+                var timeout = argument.Split('=');
+
+                if (timeout.Length > 1)
+                {
+                    options.SessionCleanupCycle = ushort.Parse(timeout[1]);
                 }
             }
             else switch (argument)

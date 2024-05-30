@@ -1,15 +1,16 @@
-﻿using FlaUIServer.Session;
+﻿using FlaUIServer.Models;
+using FlaUIServer.Session;
 
 namespace FlaUIServer.Services;
 
-public class OrphanedSessionCleanupService(ISessionManager sessionManager, ILogger<OrphanedSessionCleanupService> logger) : IHostedService, IDisposable
+public class OrphanedSessionCleanupService(ISessionManager sessionManager, ILogger<OrphanedSessionCleanupService> logger, ServerOptions options) : IHostedService, IDisposable
 {
-    private const int CleanPeriod = 90;
     private Timer _timer;
     
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(CleanPeriod));
+        logger.LogInformation("Inactive session cleanup service started, cleanup cycle: {CleanupCycle}s", options.SessionCleanupCycle);
+        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromSeconds(options.SessionCleanupCycle));
         return Task.CompletedTask;
     }
 
@@ -25,7 +26,7 @@ public class OrphanedSessionCleanupService(ISessionManager sessionManager, ILogg
 
         foreach (var sessionId in deleted)
         {
-            logger.LogInformation("Cleaning service removed inactive session '{SessionId}'", sessionId);
+            logger.LogInformation("Cleanup service removed inactive session '{SessionId}'", sessionId);
         }
     }
     

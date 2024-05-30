@@ -26,7 +26,7 @@ public static class ServerStartConsoleHelper
             swaggerUrls.Append($"{url}/swagger/index.html,");
         }
         
-        logger.LogInformation("Starting FlaUI Server, listening at url: {Urls}, options: {{ UseSwagger: {UseSwagger}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody} }}", urls, options.UseSwagger, options.UseSwagger, options.LogResponseBody);
+        logger.LogInformation("Starting FlaUI Server, listening at url: {Urls}, options: {{ UseSwagger: {UseSwagger}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody}, SessionCleanupCycle: {SessionCleanupCycle} }}", urls, options.UseSwagger, options.UseSwagger, options.LogResponseBody, options.SessionCleanupCycle);
         if (options.UseSwagger)
         {
             logger.LogInformation("Swagger available at: {SwaggerUrls}", swaggerUrls);

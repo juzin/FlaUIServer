@@ -4,7 +4,7 @@ using FlaUIServer.Middlewares;
 using FlaUIServer.Services;
 using Serilog;
 
-// --urls= --use-swagger --allow-powershell --log-response-body
+// --urls= --cleanup-cycle= --use-swagger --allow-powershell --log-response-body
 var options = CommandLineArgumentsHelper.ParseArguments(args);
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +16,12 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Add required services to the container
 builder.AddServices(options);
-builder.Services.AddHostedService<OrphanedSessionCleanupService>();
+
+// Inactive session cleanup
+if (options.SessionCleanupCycle != 0)
+{
+    builder.Services.AddHostedService<OrphanedSessionCleanupService>();
+}
 
 var app = builder.Build();
 

@@ -14,5 +14,5 @@ Additional arguments:
 
 --use-swagger - Enables swagger by default is disabled
 --allow-powershell - Allows powershell execution by default is disabled
---log-response-body  - Enables logging of request/response body to console
-
+--log-response-body - Enables logging of request/response body to console
+--cleanup-cycle=60 - Delay between cleaning of inactive session default value is 90 seconds, 0 disables cleanup service
