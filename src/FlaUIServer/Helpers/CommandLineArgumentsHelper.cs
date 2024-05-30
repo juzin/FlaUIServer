@@ -4,6 +4,11 @@ namespace FlaUIServer.Helpers;
 
 public static class CommandLineArgumentsHelper
 {
+    /// <summary>
+    /// Parse command line arguments and create configuration object
+    /// </summary>
+    /// <param name="args">Arguments</param>
+    /// <returns>Server configuration options</returns>
     public static ServerOptions ParseArguments(string[] args)
     {
         var options = new ServerOptions();

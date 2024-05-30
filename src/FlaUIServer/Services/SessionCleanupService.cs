@@ -3,7 +3,13 @@ using FlaUIServer.Session;
 
 namespace FlaUIServer.Services;
 
-public class OrphanedSessionCleanupService(ISessionManager sessionManager, ILogger<OrphanedSessionCleanupService> logger, ServerOptions options) : IHostedService, IDisposable
+/// <summary>
+/// Service periodically closing and removing inactive sessions 
+/// </summary>
+/// <param name="sessionManager">Session manager</param>
+/// <param name="logger">Logger</param>
+/// <param name="options">Server options</param>
+public class SessionCleanupService(ISessionManager sessionManager, ILogger<SessionCleanupService> logger, ServerOptions options) : IHostedService, IDisposable
 {
     private Timer _timer;
     

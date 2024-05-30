@@ -74,6 +74,7 @@ public class WinAppSession : IDisposable
     /// </summary>
     /// <param name="capabilities">Session capabilities</param>
     /// <param name="loggerFactory">Logger factory</param>
+    /// <param name="options">Server options</param>
     public WinAppSession(Capabilities capabilities, ILoggerFactory loggerFactory, ServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(capabilities);
@@ -108,6 +109,12 @@ public class WinAppSession : IDisposable
 
     #region Public Members
     
+    /// <summary>
+    /// Find element using locator strategy and selector
+    /// </summary>
+    /// <param name="searchParams">Locator strategy and selector</param>
+    /// <returns>Element id</returns>
+    /// <exception cref="ObjectNotFoundException"></exception>
     public Guid FindElement(FindElementRequest searchParams)
     {
         var element = FindAutomationElement(ActiveWindow, searchParams);
@@ -124,6 +131,13 @@ public class WinAppSession : IDisposable
         return elementId;
     }
     
+    /// <summary>
+    /// Find element in element using locator strategy and selector
+    /// </summary>
+    /// <param name="parentElementId">Parent element id</param>
+    /// <param name="searchParams">Locator strategy and selector</param>
+    /// <returns>Element id</returns>
+    /// <exception cref="ObjectNotFoundException"></exception>
     public Guid ElementFindElement(Guid parentElementId, FindElementRequest searchParams)
     {
         var parentElement = GetElement(parentElementId);
@@ -141,6 +155,12 @@ public class WinAppSession : IDisposable
         return elementId;
     }
 
+    /// <summary>
+    /// Find elements using locator strategy and selector
+    /// </summary>
+    /// <param name="searchParams">Locator strategy and selector</param>
+    /// <returns>Element id</returns>
+    /// <exception cref="ObjectNotFoundException"></exception>
     public Guid[] FindElements(FindElementRequest searchParams)
     {
         var elements = FindAutomationElements(ActiveWindow, searchParams);
@@ -163,15 +183,22 @@ public class WinAppSession : IDisposable
         return elementIds.ToArray();
     }
 
-    public Guid[] ElementFindElements(Guid parentElementId, FindElementRequest findElement)
+    /// <summary>
+    /// Find elements in element using locator strategy and selector
+    /// </summary>
+    /// <param name="parentElementId">Parent element id</param>
+    /// <param name="searchParams">Locator strategy and selector</param>
+    /// <returns>Element ids</returns>
+    /// <exception cref="ObjectNotFoundException"></exception>
+    public Guid[] ElementFindElements(Guid parentElementId, FindElementRequest searchParams)
     {
         var parentElement = GetElement(parentElementId);
-        var elements = FindAutomationElements(parentElement, findElement);
+        var elements = FindAutomationElements(parentElement, searchParams);
 
         if (elements.Length == 0)
         {
             throw new ObjectNotFoundException(
-                $"Elements by '{findElement.Using}' value '{findElement.Value}' not found in parent element id {parentElementId}");
+                $"Elements by '{searchParams.Using}' value '{searchParams.Value}' not found in parent element id {parentElementId}");
         }
 
         List<Guid> elementIds = [];
@@ -186,6 +213,10 @@ public class WinAppSession : IDisposable
         return elementIds.ToArray();
     }
     
+    /// <summary>
+    /// Click on existing element
+    /// </summary>
+    /// <param name="elementId">Element id</param>
     public void ElementCLick(Guid elementId)
     {
         var element = GetElement(elementId);
@@ -193,6 +224,11 @@ public class WinAppSession : IDisposable
         element.AsButton().Click();
     }
 
+    /// <summary>
+    /// Fill text to existing element
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <param name="text">Text</param>
     public void ElementFillText(Guid elementId, string text)
     {
         var element = GetElement(elementId);
@@ -200,24 +236,43 @@ public class WinAppSession : IDisposable
         element.AsTextBox().Enter(text);
     }
 
+    /// <summary>
+    /// Clear text in existing element
+    /// </summary>
+    /// <param name="elementId">Element id</param>
     public void ElementClearText(Guid elementId)
     {
         var element = GetElement(elementId);
         element.AsTextBox().Text = "";
     }
 
+    /// <summary>
+    /// Check if existing element is visible and on screen
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>True if element is displayed otherwise false</returns>
     public bool IsElementDisplayed(Guid elementId)
     {
         var element = GetElement(elementId);
         return element.IsAvailable && !element.IsOffscreen;
     }
 
+    /// <summary>
+    /// Check if existing element is neabled
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>True if element is enabled</returns>
     public bool IsElementEnabled(Guid elementId)
     {
         var element = GetElement(elementId);
         return element.IsEnabled;
     }
 
+    /// <summary>
+    /// Check if element is selected
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>True if element is selected, otherwise false</returns>
     public bool IsElementSelected(Guid elementId)
     {
         var element = GetElement(elementId);
@@ -235,6 +290,11 @@ public class WinAppSession : IDisposable
         return isSelected;
     }
 
+    /// <summary>
+    /// Get existing element text 
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>Element text</returns>
     public string GetElementText(Guid elementId)
     {
         var element = GetElement(elementId);
@@ -257,12 +317,23 @@ public class WinAppSession : IDisposable
         return element.AsTextBox().Text;
     }
 
+    /// <summary>
+    /// Get element rectangle
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <returns>Element rectangle</returns>
     public RectangleResponse GetElementRectangle(Guid elementId)
     {
         var element = GetElement(elementId);
         return new RectangleResponse(element.BoundingRectangle.X, element.BoundingRectangle.Y, element.BoundingRectangle.Height, element.BoundingRectangle.Width);
     }
 
+    /// <summary>
+    /// Get element attribute value
+    /// </summary>
+    /// <param name="elementId">Element id</param>
+    /// <param name="attributeName">Attribute name</param>
+    /// <returns>Attribute value</returns>
     public string GetElementAttribute(Guid elementId, string attributeName)
     {
         var element = GetElement(elementId);

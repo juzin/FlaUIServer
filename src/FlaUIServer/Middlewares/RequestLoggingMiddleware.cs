@@ -2,6 +2,9 @@
 
 namespace FlaUIServer.Middlewares;
 
+/// <summary>
+/// Request details logging middleware
+/// </summary>
 public class RequestLoggingMiddleware
 {
     private readonly RequestDelegate _next;

@@ -10,6 +10,13 @@ public static class GestureRequestHelper
         PropertyNameCaseInsensitive = true
     };
     
+    /// <summary>
+    /// Deserialize gesture request body (First JsonElement)
+    /// </summary>
+    /// <param name="data">Json element array</param>
+    /// <typeparam name="T">Type of gesture body</typeparam>
+    /// <returns>Desirialized gesture body</returns>
+    /// <exception cref="RequestValidationException">When body is missing</exception>
     public static T DeserializeGestureRequest<T>(JsonElement[] data)
     {
         ArgumentNullException.ThrowIfNull(data);

@@ -15,7 +15,7 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:4723",
-      "commandLineArgs": "--use-swagger --allow-powershell --log-response-body --cleanup-cycle=60",
+      "commandLineArgs": "--use-swagger --allow-powershell --log-response-body",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

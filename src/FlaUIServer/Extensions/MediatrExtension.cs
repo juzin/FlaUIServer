@@ -7,6 +7,14 @@ namespace FlaUIServer.Extensions;
 
 public static class MediatrExtension
 {
+    /// <summary>
+    /// Send command and handle exception
+    /// </summary>
+    /// <param name="mediator">Mediatr</param>
+    /// <param name="request">Request command</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <typeparam name="TResponse">Response type</typeparam>
+    /// <returns>Result</returns>
     public static async Task<IResult> SendAndCreateResponse<TResponse>(this IMediator mediator, IRequest<TResponse> request, CancellationToken ct = default)
     {
         try
@@ -27,6 +35,13 @@ public static class MediatrExtension
         }
     }
     
+    /// <summary>
+    /// Send command and handle exception
+    /// </summary>
+    /// <param name="mediator">Mediatr</param>
+    /// <param name="request">Request command</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Result</returns>
     public static async Task<IResult> SendAndCreateResponse(this IMediator mediator, IRequest request, CancellationToken ct = default)
     {
         try
