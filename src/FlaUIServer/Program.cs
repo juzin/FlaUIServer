@@ -20,7 +20,7 @@ builder.AddServices(options);
 // Inactive session cleanup
 if (options.SessionCleanupCycle != 0)
 {
-    builder.Services.AddHostedService<OrphanedSessionCleanupService>();
+    builder.Services.AddHostedService<SessionCleanupService>();
 }
 
 var app = builder.Build();

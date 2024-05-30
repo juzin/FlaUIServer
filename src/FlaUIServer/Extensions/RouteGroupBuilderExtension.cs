@@ -8,6 +8,11 @@ namespace FlaUIServer.Extensions;
 
 public static class RouteGroupBuilderExtension
 {
+    /// <summary>
+    /// Map Session endpoints
+    /// </summary>
+    /// <param name="groupBuilder">Group builder</param>
+    /// <returns>Group builder</returns>
     public static RouteGroupBuilder MapSessionEndpoints(this RouteGroupBuilder groupBuilder)
     {
         ArgumentNullException.ThrowIfNull(groupBuilder);
@@ -220,6 +225,11 @@ public static class RouteGroupBuilderExtension
         return groupBuilder;
     }
 
+    /// <summary>
+    /// Map server info endpoints
+    /// </summary>
+    /// <param name="groupBuilder">Group builder</param>
+    /// <returns>Group builder</returns>
     public static RouteGroupBuilder MapServerInfoEndpoint(this RouteGroupBuilder groupBuilder)
     {
         groupBuilder.MapGet("/sessions",

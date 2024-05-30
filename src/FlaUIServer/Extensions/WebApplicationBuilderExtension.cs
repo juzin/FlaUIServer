@@ -7,6 +7,11 @@ namespace FlaUIServer.Extensions;
 
 public static class WebApplicationBuilderExtension
 {
+    /// <summary>
+    /// Register services to application builder
+    /// </summary>
+    /// <param name="builder">Application builder</param>
+    /// <param name="options">Server options</param>
     public static void AddServices(this WebApplicationBuilder builder, ServerOptions options)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -21,7 +26,7 @@ public static class WebApplicationBuilderExtension
         builder.Services.AddSwaggerGen(x => x.ExampleFilters());
         builder.Services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
         
-        // Register MediatR services
+        // Register Mediatr services
         builder.Services.AddMediatR(cfg => {
             cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
         });

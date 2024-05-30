@@ -4,6 +4,11 @@ namespace FlaUIServer.Helpers;
 
 public static class KeyboardHelper
 {
+    /// <summary>
+    /// Map modifier key from unicode to enum
+    /// </summary>
+    /// <param name="key">Unicode key</param>
+    /// <returns>Modifier key enum or null</returns>
     public static VirtualKeyShort? GetModifierKey(char key)
     {
         switch (key)
