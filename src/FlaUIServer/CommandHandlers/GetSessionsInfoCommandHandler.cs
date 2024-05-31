@@ -1,4 +1,5 @@
-﻿using FlaUIServer.Session;
+﻿using FlaUIServer.Models;
+using FlaUIServer.Session;
 using MediatR;
 
 namespace FlaUIServer.CommandHandlers;

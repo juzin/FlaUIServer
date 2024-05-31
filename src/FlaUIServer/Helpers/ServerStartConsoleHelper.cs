@@ -1,5 +1,4 @@
-﻿using System.Text;
-using FlaUIServer.Models;
+﻿using FlaUIServer.Models;
 
 namespace FlaUIServer.Helpers;
 
@@ -17,19 +16,19 @@ public static class ServerStartConsoleHelper
         ArgumentNullException.ThrowIfNull(logger);
         ArgumentNullException.ThrowIfNull(options);
 
-        var urls = new StringBuilder();
-        var swaggerUrls = new StringBuilder();
-
+        var urls = new List<string>();
+        var swaggerUrls = new List<string>();
+        
         foreach (var url in options.Urls)
         {
-            urls.Append($"{url}/wd/hub,");
-            swaggerUrls.Append($"{url}/swagger/index.html,");
+            urls.Add($"{url}/wd/hub");
+            swaggerUrls.Add($"{url}/swagger/index.html");
         }
         
-        logger.LogInformation("Starting FlaUI Server, listening at url: {Urls}, options: {{ UseSwagger: {UseSwagger}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody}, SessionCleanupCycle: {SessionCleanupCycle} }}", urls, options.UseSwagger, options.UseSwagger, options.LogResponseBody, options.SessionCleanupCycle);
+        logger.LogInformation("Starting FlaUI Server, listening at url: {Urls} options: {{ UseSwagger: {UseSwagger}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody}, SessionCleanupCycle: {SessionCleanupCycle} }}", string.Join(", ", urls), options.UseSwagger, options.UseSwagger, options.LogResponseBody, options.SessionCleanupCycle);
         if (options.UseSwagger)
         {
-            logger.LogInformation("Swagger available at: {SwaggerUrls}", swaggerUrls);
+            logger.LogInformation("Swagger available at: {SwaggerUrls}", string.Join(", ", swaggerUrls));
         }
     }
 }
