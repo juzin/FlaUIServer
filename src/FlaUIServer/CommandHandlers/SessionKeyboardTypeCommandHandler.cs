@@ -10,6 +10,7 @@ public class SessionKeyboardTypeCommandHandler(ISessionManager sessionManager) :
 {
     public async Task Handle(SessionKeyboardTypeCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.KeyboardType(request.Keys), cancellationToken);
     }

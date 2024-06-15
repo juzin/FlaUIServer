@@ -17,7 +17,7 @@ public class SessionManager(ServerOptions options) : ISessionManager
         _sessions[sessionData.SessionId] = sessionData;
         return sessionData.SessionId;
     }
-    
+
     /// <inheritdoc />
     public void DeleteSession(Guid sessionId)
     {
@@ -37,7 +37,7 @@ public class SessionManager(ServerOptions options) : ISessionManager
             throw new ObjectNotFoundException($"Session with id '{sessionId}' was not found");
         }
     }
-    
+
     /// <inheritdoc />
     public WinAppSession GetSession(Guid sessionId)
     {
@@ -49,7 +49,7 @@ public class SessionManager(ServerOptions options) : ISessionManager
 
         throw new ObjectNotFoundException($"Session with id '{sessionId}' was not found");
     }
-    
+
     /// <inheritdoc />
     public SessionInfo[] GetSessions()
     {
@@ -66,7 +66,21 @@ public class SessionManager(ServerOptions options) : ISessionManager
             DeleteSession(session.Key);
             deleted.Add(session.Key);
         }
-        
+
+        return deleted.ToArray();
+    }
+    
+    /// <inheritdoc />
+    public Guid[] RemoveAll()
+    {
+        var deleted = new List<Guid>();
+
+        foreach (var session in _sessions)
+        {
+            DeleteSession(session.Key);
+            deleted.Add(session.Key);
+        }
+
         return deleted.ToArray();
     }
 }

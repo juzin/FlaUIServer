@@ -10,6 +10,7 @@ public class SessionWindowSwitchToCommandHandler(ISessionManager sessionManager)
 {
     public async Task Handle(SessionWindowSwitchToCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.SwitchToWindow(request.Window.Name), cancellationToken);
     }

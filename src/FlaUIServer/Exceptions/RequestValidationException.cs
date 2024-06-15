@@ -6,9 +6,13 @@ public class RequestValidationException : Exception
         : base(message)
     {
     }
-    
+
     public RequestValidationException(string message, Exception innerException)
         : base(message, innerException)
+    {
+    }
+
+    public RequestValidationException()
     {
     }
 }

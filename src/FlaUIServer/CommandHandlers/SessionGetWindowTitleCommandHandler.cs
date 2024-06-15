@@ -9,7 +9,8 @@ public class SessionGetWindowTitleCommandHandler(ISessionManager sessionManager)
 {
     public async Task<string> Handle(SessionGetWindowTitleCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
-        return await Task.Run(() => session.GetWindowTitle(), cancellationToken);
+        return await Task.Run(() => session.WindowTitle, cancellationToken);
     }
 }

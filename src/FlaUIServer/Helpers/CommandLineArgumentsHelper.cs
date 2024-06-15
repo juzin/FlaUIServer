@@ -12,12 +12,6 @@ public static class CommandLineArgumentsHelper
     public static ServerOptions ParseArguments(string[] args)
     {
         var options = new ServerOptions();
-
-        if (Environment.GetEnvironmentVariable("ASPNETCORE_URLS") is not null)
-        {
-
-        }
-        
         var envUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")?.Split(' ');
 
         if (envUrls is not null)
@@ -29,7 +23,7 @@ public static class CommandLineArgumentsHelper
         }
 
         if (args is null) return options;
-        
+
         foreach (var argument in args)
         {
             if (argument.StartsWith("--urls="))
@@ -49,7 +43,7 @@ public static class CommandLineArgumentsHelper
 
                 if (timeout.Length > 1)
                 {
-                    options.SessionCleanupCycle = ushort.Parse(timeout[1]);
+                    options.SessionCleanupCycleSeconds = ushort.Parse(timeout[1]);
                 }
             }
             else switch (argument)

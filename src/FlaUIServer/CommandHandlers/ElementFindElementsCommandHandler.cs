@@ -10,6 +10,7 @@ public class ElementFindElementsCommandHandler(ISessionManager sessionManager) :
 {
     public async Task<Guid[]> Handle(ElementFindElementsCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.ElementFindElements(request.ElementId, request.SearchOptions), cancellationToken);
     }

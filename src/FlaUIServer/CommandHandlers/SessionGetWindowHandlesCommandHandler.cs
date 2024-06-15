@@ -9,6 +9,7 @@ public class SessionGetWindowHandlesCommandHandler(ISessionManager sessionManage
 {
     public async Task<string[]> Handle(SessionGetWindowHandlesCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.GetWindowHandles(), cancellationToken);
     }

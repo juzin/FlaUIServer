@@ -9,6 +9,7 @@ public class SessionWindowCloseCommandHandler(ISessionManager sessionManager) : 
 {
     public async Task Handle(SessionWindowCloseCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.CloseActiveWindow(), cancellationToken);
     }

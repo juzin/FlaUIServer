@@ -10,6 +10,7 @@ public class SessionExecuteScriptCommandHandler(ISessionManager sessionManager) 
 {
     public async Task<string> Handle(SessionExecuteScriptCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await session.ExecuteScript(request.Data, cancellationToken);
     }

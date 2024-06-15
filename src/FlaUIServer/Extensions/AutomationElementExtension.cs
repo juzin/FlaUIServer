@@ -22,19 +22,19 @@ public static class AutomationElementExtension
 
         return null;
     }
-    
+
     /// <summary>
     /// Try to get property from element
     /// </summary>
     /// <param name="element">Element</param>
     /// <param name="propertyName">Property name</param>
-    /// <param name="value">Out value, null if gettyng property failed</param>
+    /// <param name="value">Out value, null if getting property failed</param>
     /// <returns>True if getting property value succeeded, otherwise false</returns>
     public static bool TryGetProperty(this AutomationElement element, string propertyName, out object value)
     {
         ArgumentNullException.ThrowIfNull(element);
         ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
-        
+
         var library = element.FrameworkAutomationElement.PropertyIdLibrary;
 
         if (library.GetType().GetProperty(propertyName) is { } propertyInfo &&
@@ -47,7 +47,7 @@ public static class AutomationElementExtension
         value = null;
         return false;
     }
-    
+
     /// <summary>
     /// Traverse through all elements and create xml structure
     /// </summary>
@@ -55,11 +55,12 @@ public static class AutomationElementExtension
     /// <returns>xml representation of elements structure</returns>
     public static string ToXml(this AutomationElement element)
     {
+        ArgumentNullException.ThrowIfNull(element);
         var sb = new StringBuilder();
 
         var descendants = element.FindAllChildren();
 
-        if (descendants.Any())
+        if (descendants.Length > 0)
         {
             sb.Append($"<{element.Properties.ControlType}{GetElementProperties(element)}>");
             foreach (var descendant in descendants)
@@ -72,7 +73,7 @@ public static class AutomationElementExtension
         {
             sb.Append($"<{element.Properties.ControlType}{GetElementProperties(element)} />");
         }
-        
+
         return sb.ToString();
     }
 
@@ -93,7 +94,7 @@ public static class AutomationElementExtension
         {
             sb.Append($" x=\"{element.Properties.BoundingRectangle.Value.X}\" y=\"{element.Properties.BoundingRectangle.Value.Y}\" width=\"{element.Properties.BoundingRectangle.Value.Width}\" height=\"{element.Properties.BoundingRectangle.Value.Height}\"");
         }
-        
+
         return sb.ToString();
     }
 }

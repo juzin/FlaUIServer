@@ -9,6 +9,7 @@ public class IsElementDisplayedCommandHandler(ISessionManager sessionManager) : 
 {
     public async Task<bool> Handle(IsElementDisplayedCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.IsElementDisplayed(request.ElementId), cancellationToken);
     }

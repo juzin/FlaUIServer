@@ -9,6 +9,7 @@ public class SessionGetSourceCommandHandler(ISessionManager sessionManager) : IR
 {
     public async Task<string> Handle(SessionGetSourceCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.WindowGetSource(), cancellationToken);
     }
