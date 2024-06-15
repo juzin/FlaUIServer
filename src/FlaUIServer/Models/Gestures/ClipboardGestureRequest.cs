@@ -1,3 +1,3 @@
 ﻿namespace FlaUIServer.Models.Gestures;
 
-public record ClipboardGestureRequest(string ContentType, string B64Content);
+public record ClipboardGestureRequest(string ContentType, string Base64Content);

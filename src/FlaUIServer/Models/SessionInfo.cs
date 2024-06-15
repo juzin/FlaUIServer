@@ -10,8 +10,8 @@ public class SessionInfo
     /// </summary>
     [JsonIgnore]
     public Guid SessionId { get; set; }
-    
+
     public DateTimeOffset Created { get; set; }
-    
+
     public DateTimeOffset LastActionAt { get; set; }
 }

@@ -18,7 +18,7 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.AddServices(options);
 
 // Inactive session cleanup
-if (options.SessionCleanupCycle != 0)
+if (options.SessionCleanupCycleSeconds != 0)
 {
     builder.Services.AddHostedService<SessionCleanupService>();
 }
@@ -56,4 +56,4 @@ app.MapGroup("")
 ServerStartConsoleHelper.WriteLogo();
 ServerStartConsoleHelper.LogServerOptions(app.Logger, options);
 
-app.Run();
+await app.RunAsync();

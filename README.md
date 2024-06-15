@@ -14,18 +14,22 @@ Not all endpoints are implemented.
 
 ## Run server
 
-.\FlaUIServer.exe --urls=http://127.0.0.1:4723 --log-response-body --use-swagger
+`.\FlaUIServer.exe --urls=http://127.0.0.1:4723 --log-response-body --use-swagger`
 
 Additional arguments:
 
-* --use-swagger - Enables swagger by default is disabled
-* --allow-powershell - Allows powershell execution by default is disabled
-* --log-response-body - Enables logging of request/response body to console
-* --cleanup-cycle=60 - Delay between cleaning of inactive session default value is 90 seconds, 0 disables cleanup service
+* `--use-swagger` - Enables swagger by default is disabled
+* `--allow-powershell` - Allows powershell execution by default is disabled
+* `--log-response-body` - Enables logging of request/response body to console
+* `--cleanup-cycle=90` - Delay between cleaning of inactive session default value is 90 seconds, 0 disables cleanup service
+
+## Create release
+
+To publish new release create a **tag** on master branch with incremented version of previous tag, eg. "1.0.1". Release can be created only from **master** branch!
 
 ## Start session
 
-POST request to /wd/hub/session
+POST to /wd/hub/session
 
 When starting session there needs to be specified path to application executable (appium:app) or application process id (appium:appTopLevelWindow). For desktop session use "Root" in appium:app
 
@@ -91,8 +95,8 @@ Send gesture (script) and string representation of json object as first member o
 
 | Gesture | Parameters | Description |
 |---|---|---|
-| powerShell | - Commad - One line command - Script - Multiple line script | Execute powershell script or command |
-| windows: click | - X</br> - Y </br>- Button - "left" \| "right" \| "middle" \| "back" \| "forward"</br> - Times - Number of clicks</br> - InterClickDelayMs - Delay between clicks in milliseconds | Click, multiclick on coordinates |
+| powerShell | - Command - One line command - Script - Multiple line script | Execute powershell script or command |
+| windows: click | - X</br> - Y </br>- Button - "left" \| "right" \| "middle" \| "back" \| "forward"</br> - Times - Number of clicks</br> - InterClickDelayMs - Delay between clicks in milliseconds | Click, multi click on coordinates |
 | windows: clickAndDrag | - StartX</br> - StartY</br> - EndX</br> - EndY | Drag from coordinates to coordinates |
 | windows: hover | - StartX</br> - StartY</br> - EndX</br> - EndY | Move mouse cursor to coordinates |
 | windows: scroll | - X</br> - Y</br> - DeltaX</br>  - DeltaY | Mouse scroll |

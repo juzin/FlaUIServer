@@ -10,6 +10,7 @@ public class FindElementCommandHandler(ISessionManager sessionManager) : IReques
 {
     public async Task<FindElementResponse> Handle(FindElementCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         var elementId = await Task.Run(() => session.FindElement(request.SearchOptions), cancellationToken);
 

@@ -10,6 +10,7 @@ public class GetElementRectangleCommandHandler(ISessionManager sessionManager) :
 {
     public async Task<RectangleResponse> Handle(GetElementRectangleCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.GetElementRectangle(request.ElementId), cancellationToken);
     }

@@ -10,7 +10,8 @@ public class SessionWindowGetRectangleCommandHandler(ISessionManager sessionMana
 {
     public async Task<RectangleResponse> Handle(SessionWindowGetRectangleCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
-        return await Task.Run(() => session.GetWindowRectangle(), cancellationToken);
+        return await Task.Run(() => session.WindowRectangle, cancellationToken);
     }
 }

@@ -9,6 +9,7 @@ public class ElementClearTextCommandHandler(ISessionManager sessionManager) : IR
 {
     public async Task Handle(ElementClearTextCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.ElementClearText(request.ElementId), cancellationToken);
     }

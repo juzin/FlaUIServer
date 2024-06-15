@@ -18,16 +18,17 @@ public class RequestLoggingMiddleware
 
     public async Task Invoke(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var requestBody = await GetRequestBody(context);
         var requestMethod = context.Request.Method;
         var requestPath = context.Request.Path;
 
         var start = Stopwatch.GetTimestamp();
-        
+
         try
         {
             var originalResponseBody = context.Response.Body;
-            using var responseBody = new MemoryStream();
+            using MemoryStream responseBody = new ();
             context.Response.Body = responseBody;
             await _next(context);
             var responseContent = await GetResponseBody(context, responseBody, originalResponseBody);
@@ -46,7 +47,7 @@ public class RequestLoggingMiddleware
         {
             requestBody = $" {requestBody}";
         }
-        
+
         responseBody = !string.IsNullOrEmpty(responseBody) ? $"{Environment.NewLine}----> {responseBody}" : "";
 
         var errorMessage = "";
@@ -54,15 +55,16 @@ public class RequestLoggingMiddleware
         {
             errorMessage = $"{Environment.NewLine}{exception}";
         }
-        
+
         _logger.LogInformation("HTTP {Method} {Path}{RequestBody} response {StatusCode} in {Elapsed} ms{ResponseBody}{Exception}", method, path, requestBody, statusCode, elapsed, responseBody, errorMessage);
         return false;
     }
-    
-    private async Task<string> GetResponseBody(HttpContext context, MemoryStream responseBody, Stream originalResponseBody)
+
+    private static async Task<string> GetResponseBody(HttpContext context, MemoryStream responseBody, Stream originalResponseBody)
     {
         responseBody.Position = 0;
-        var responseContent = await new StreamReader(responseBody).ReadToEndAsync();
+        using var streamReader = new StreamReader(responseBody);
+        var responseContent = await streamReader.ReadToEndAsync();
         responseBody.Position = 0;
         await responseBody.CopyToAsync(originalResponseBody);
         context.Response.Body = originalResponseBody;
@@ -70,16 +72,21 @@ public class RequestLoggingMiddleware
         return RemoveLongContent(responseContent);
     }
 
-    private async Task<string> GetRequestBody(HttpContext context)
+    private static async Task<string> GetRequestBody(HttpContext context)
     {
         context.Request.EnableBuffering();
-        var requestReader = new StreamReader(context.Request.Body);
-        var requestContent = await requestReader.ReadToEndAsync();
+
+        using var ms = new MemoryStream();
+        using var sr = new StreamReader(ms);
+
+        await context.Request.Body.CopyToAsync(ms);
+        var requestContent = await sr.ReadToEndAsync();
+
         context.Request.Body.Position = 0;
-        
+
         return RemoveLongContent(requestContent);
     }
-    
+
     private static double GetElapsedMilliseconds(long start, long stop)
     {
         return (stop - start) * 1000 / (double)Stopwatch.Frequency;

@@ -10,6 +10,7 @@ public class CreateSessionCommandHandler(ISessionManager sessionManager, ILogger
 {
     public async Task<SessionResponse> Handle(CreateSessionCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var sessionId = await Task.Run(() => sessionManager.CreateSession(request.CreateSession.Capabilities, loggerFactory), cancellationToken);
         return new SessionResponse(sessionId);
     }

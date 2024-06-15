@@ -10,6 +10,7 @@ public class GetElementAttributeCommandHandler(ISessionManager sessionManager)
 {
     public async Task<string> Handle(GetElementAttributeCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.GetElementAttribute(request.ElementId, request.Name), cancellationToken);
     }

@@ -10,6 +10,7 @@ public class ElementFillTextCommandHandler(ISessionManager sessionManager) : IRe
 {
     public async Task Handle(ElementFillTextCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.ElementFillText(request.ElementId, new string(request.Text.Value)), cancellationToken);
     }

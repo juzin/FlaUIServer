@@ -1,4 +1,6 @@
-﻿namespace FlaUIServer.Helpers;
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace FlaUIServer.Helpers;
 
 public static class ResultsHelper
 {
@@ -9,14 +11,16 @@ internal sealed class InternalServerErrorStatus<TValue>(TValue value) : IResult,
 {
     object IValueHttpResult.Value => Value;
     public TValue Value { get; } = value;
+
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Similar to MS implementations")]
     public int StatusCode => StatusCodes.Status500InternalServerError;
 
     int? IStatusCodeHttpResult.StatusCode => StatusCode;
-    
+
     public async Task ExecuteAsync(HttpContext httpContext)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
-        
+
         httpContext.Response.StatusCode = StatusCode;
         httpContext.Response.ContentType = "application/json";
         await httpContext.Response.WriteAsJsonAsync(Value);

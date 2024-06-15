@@ -16,16 +16,21 @@ public static class WebApplicationBuilderExtension
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(options);
-        
+
         // Configuration
         builder.Services.AddSingleton(options);
-        
+
         // Additional services
         builder.Services.AddSingleton<ISessionManager, SessionManager>();
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen(x => x.ExampleFilters());
-        builder.Services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
-        
+
+        // Add swagger services
+        if (builder.Environment.IsDevelopment() || options.UseSwagger)
+        {
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(x => x.ExampleFilters());
+            builder.Services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
+        }
+
         // Register Mediatr services
         builder.Services.AddMediatR(cfg => {
             cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);

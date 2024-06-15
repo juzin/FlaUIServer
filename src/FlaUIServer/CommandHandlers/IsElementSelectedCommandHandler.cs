@@ -9,6 +9,7 @@ public class IsElementSelectedCommandHandler(ISessionManager sessionManager) : I
 {
     public async Task<bool> Handle(IsElementSelectedCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
        return await Task.Run(() => session.IsElementSelected(request.ElementId), cancellationToken);
     }

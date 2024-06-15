@@ -6,9 +6,9 @@ namespace FlaUIServer.Models;
 public class FindElementRequest
 {
     public string Using { get; set; }
-    
+
     public string Value { get; set; }
-    
+
     [JsonIgnore]
     public FindBy FindBy {
         get

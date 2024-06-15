@@ -21,7 +21,7 @@ namespace FlaUIServer.Session;
 /// <summary>
 /// Represents Windows application automation session
 /// </summary>
-public class WinAppSession : IDisposable
+public sealed class WinAppSession : IDisposable
 {
     private readonly ILogger<WinAppSession> _logger;
     private readonly bool _isRootSession;
@@ -29,6 +29,7 @@ public class WinAppSession : IDisposable
     private readonly UIA3Automation _automation;
     private readonly Application _application;
     private readonly Dictionary<Guid, AutomationElement> _elements = [];
+    private readonly List<VirtualKeyShort> _pressedKeys = [];
     private Window _activeWindow;
 
     /// <summary>
@@ -39,7 +40,7 @@ public class WinAppSession : IDisposable
         get
         {
             if (_activeWindow is not null) return _activeWindow;
-         
+
             // In case window is null return application main window
             if (_isRootSession)
             {
@@ -53,12 +54,12 @@ public class WinAppSession : IDisposable
         }
         set => _activeWindow = value;
     }
-    
+
     /// <summary>
     /// Session id
     /// </summary>
     public Guid SessionId { get; }
-    
+
     /// <summary>
     /// Date and time of session creation
     /// </summary>
@@ -80,11 +81,11 @@ public class WinAppSession : IDisposable
         ArgumentNullException.ThrowIfNull(capabilities);
         ArgumentNullException.ThrowIfNull(loggerFactory);
         ArgumentNullException.ThrowIfNull(options);
-        
+
         _logger = loggerFactory.CreateLogger<WinAppSession>();
         _options = options;
         _automation = new UIA3Automation();
-        
+
         if (capabilities.AlwaysMatch.ApplicationTopLevelWindow is not null)
         {
             _application = Application.Attach(Convert.ToInt32(capabilities.AlwaysMatch.ApplicationTopLevelWindow, 16));
@@ -101,14 +102,14 @@ public class WinAppSession : IDisposable
             ActiveWindow = _application.GetMainWindow(_automation);
             _isRootSession = false;
         }
-        
+
         Created = DateTimeOffset.Now;
         SessionId = Guid.NewGuid();
         LastActionAt = DateTimeOffset.Now;
     }
 
     #region Public Members
-    
+
     /// <summary>
     /// Find element using locator strategy and selector
     /// </summary>
@@ -117,6 +118,7 @@ public class WinAppSession : IDisposable
     /// <exception cref="ObjectNotFoundException"></exception>
     public Guid FindElement(FindElementRequest searchParams)
     {
+        ArgumentNullException.ThrowIfNull(searchParams);
         var element = FindAutomationElement(ActiveWindow, searchParams);
 
         if (element is null)
@@ -130,7 +132,7 @@ public class WinAppSession : IDisposable
 
         return elementId;
     }
-    
+
     /// <summary>
     /// Find element in element using locator strategy and selector
     /// </summary>
@@ -140,6 +142,8 @@ public class WinAppSession : IDisposable
     /// <exception cref="ObjectNotFoundException"></exception>
     public Guid ElementFindElement(Guid parentElementId, FindElementRequest searchParams)
     {
+        ArgumentNullException.ThrowIfNull(searchParams);
+
         var parentElement = GetElement(parentElementId);
         var element = FindAutomationElement(parentElement, searchParams);
 
@@ -163,6 +167,7 @@ public class WinAppSession : IDisposable
     /// <exception cref="ObjectNotFoundException"></exception>
     public Guid[] FindElements(FindElementRequest searchParams)
     {
+        ArgumentNullException.ThrowIfNull(searchParams);
         var elements = FindAutomationElements(ActiveWindow, searchParams);
 
         if (elements.Length == 0)
@@ -172,7 +177,7 @@ public class WinAppSession : IDisposable
         }
 
         List<Guid> elementIds = [];
-        
+
         foreach (var element in elements)
         {
             var elementId = Guid.NewGuid();
@@ -192,6 +197,8 @@ public class WinAppSession : IDisposable
     /// <exception cref="ObjectNotFoundException"></exception>
     public Guid[] ElementFindElements(Guid parentElementId, FindElementRequest searchParams)
     {
+        ArgumentNullException.ThrowIfNull(searchParams);
+
         var parentElement = GetElement(parentElementId);
         var elements = FindAutomationElements(parentElement, searchParams);
 
@@ -202,7 +209,7 @@ public class WinAppSession : IDisposable
         }
 
         List<Guid> elementIds = [];
-        
+
         foreach (var element in elements)
         {
             var elementId = Guid.NewGuid();
@@ -212,7 +219,7 @@ public class WinAppSession : IDisposable
 
         return elementIds.ToArray();
     }
-    
+
     /// <summary>
     /// Click on existing element
     /// </summary>
@@ -258,7 +265,7 @@ public class WinAppSession : IDisposable
     }
 
     /// <summary>
-    /// Check if existing element is neabled
+    /// Check if existing element is enabled
     /// </summary>
     /// <param name="elementId">Element id</param>
     /// <returns>True if element is enabled</returns>
@@ -353,7 +360,7 @@ public class WinAppSession : IDisposable
         using var ms = new MemoryStream();
         // bitmap.Save(ms, ImageFormat.Png);
         result.Bitmap.Save(ms, ImageFormat.Png);
-        
+
         return Convert.ToBase64String(ms.ToArray());
     }
 
@@ -361,19 +368,13 @@ public class WinAppSession : IDisposable
     /// Get active window title
     /// </summary>
     /// <returns>Window title</returns>
-    public string GetWindowTitle()
-    {
-        return ActiveWindow.Title;
-    }
+    public string WindowTitle => ActiveWindow.Title;
 
     /// <summary>
     /// Get active window rectangle
     /// </summary>
     /// <returns></returns>
-    public RectangleResponse GetWindowRectangle()
-    {
-        return new RectangleResponse(ActiveWindow.BoundingRectangle.X, ActiveWindow.BoundingRectangle.Y, ActiveWindow.BoundingRectangle.Height, ActiveWindow.BoundingRectangle.Width);
-    }
+    public RectangleResponse WindowRectangle => new (ActiveWindow.BoundingRectangle.X, ActiveWindow.BoundingRectangle.Y, ActiveWindow.BoundingRectangle.Height, ActiveWindow.BoundingRectangle.Width);
 
     /// <summary>
     /// Get active window handle
@@ -383,7 +384,7 @@ public class WinAppSession : IDisposable
     {
         return ActiveWindow.GetRuntimeId();
     }
-    
+
     /// <summary>
     /// Get all window handles
     /// </summary>
@@ -402,7 +403,7 @@ public class WinAppSession : IDisposable
     {
         var windows = _application.GetAllTopLevelWindows(_automation);
         var window = windows.FirstOrDefault(x => x.GetRuntimeId().Equals(name));
-        
+
         ActiveWindow = window ?? throw new ObjectNotFoundException($"Window with handle '{name}' not found");
     }
 
@@ -414,7 +415,7 @@ public class WinAppSession : IDisposable
     {
         return $"<?xml version=\"1.0\" encoding=\"utf-16\"?>{ActiveWindow.ToXml()}";
     }
-    
+
     /// <summary>
     /// Close window session
     /// </summary>
@@ -430,7 +431,7 @@ public class WinAppSession : IDisposable
     public async Task<string> ExecuteScript(ExecuteScriptRequest data, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(data);
-        
+
         switch (data.Script)
         {
             case "powerShell":
@@ -458,64 +459,48 @@ public class WinAppSession : IDisposable
 
         return null;
     }
-    
+
     /// <summary>
     /// Type using keyboard. Modifier key is pressed until same key release it or is released at the end
     /// </summary>
     /// <param name="keys">Request with keys to type</param>
     public void KeyboardType(KeyInputRequest keys)
     {
-        var keyModifiers = new List<VirtualKeyShort>();
-        
+        ArgumentNullException.ThrowIfNull(keys);
+
         foreach (var key in keys.Value)
         {
             var modifierKey = KeyboardHelper.GetModifierKey(key);
-            
+
             if (modifierKey is not null)
             {
                 // Press modifier key, if same key is present second time release it
-                if (keyModifiers.Contains(modifierKey.Value))
+                if (_pressedKeys.Contains(modifierKey.Value))
                 {
-                    _logger.LogDebug("Release key {Key}", modifierKey.Value.ToString());
+                    _logger.LogDebug("Release key: {Key}", modifierKey.Value.ToString());
                     Keyboard.Release(modifierKey.Value);
-                    keyModifiers.Remove(modifierKey.Value);
+                    _pressedKeys.Remove(modifierKey.Value);
                 }
                 else
                 {
-                    _logger.LogDebug("Press key {Key}", modifierKey.Value.ToString());
+                    _logger.LogDebug("Press key: {Key}", modifierKey.Value.ToString());
                     Keyboard.Press(modifierKey.Value);
-                    keyModifiers.Add(modifierKey.Value);
+                    _pressedKeys.Add(modifierKey.Value);
                 }
+            }
+            //Null key - release all
+            else if (key == '\uE000')
+            {
+                ReleaseAllKeys();
             }
             else
             {
-                //Null key - release all
-                if (key == '\uE000')
-                {
-                    ReleaseAll();
-                }
-                else
-                {
-                    Keyboard.Type(key);
-                }
+                _logger.LogDebug("Type: {Key}", key);
+                Keyboard.Type(key);
             }
-        }
-
-        ReleaseAll();
-        return;
-
-        //Release all modifier keys
-        void ReleaseAll()
-        {
-            foreach (var key in keyModifiers.Reverse<VirtualKeyShort>())
-            {
-                _logger.LogDebug("Release key {Key}", key.ToString());
-                Keyboard.Release(key);
-            }
-            keyModifiers.Clear();
         }
     }
-    
+
     /// <summary>
     /// Close application
     /// </summary>
@@ -526,7 +511,7 @@ public class WinAppSession : IDisposable
             _application.Close();
         }
     }
-    
+
     /// <summary>
     /// Updates last action time
     /// </summary>
@@ -534,7 +519,7 @@ public class WinAppSession : IDisposable
     {
         LastActionAt = DateTimeOffset.Now;
     }
-    
+
     /// <summary>
     /// Dispose session
     /// </summary>
@@ -546,7 +531,7 @@ public class WinAppSession : IDisposable
     }
 
     #endregion
-    
+
     #region Private Members
 
     private static AutomationElement FindAutomationElement(AutomationElement parent, FindElementRequest searchParams)
@@ -576,12 +561,12 @@ public class WinAppSession : IDisposable
                 $"Find by '{searchParams.FindBy}' is not supported, supported strategies are 'AutomationId', 'ClassName', 'TagName', 'Name', 'Xpath'")
         };
     }
-    
+
     /// <summary>
     /// Get element from collection by id
     /// </summary>
     /// <param name="elementId">Element id</param>
-    /// <returns>ELement</returns>
+    /// <returns>Element</returns>
     /// <exception cref="ObjectNotFoundException">When element is not found in collection</exception>
     private AutomationElement GetElement(Guid elementId)
     {
@@ -596,11 +581,11 @@ public class WinAppSession : IDisposable
     private void ClickGesture(ClickGestureRequest data)
     {
         _logger.LogDebug("Click gesture x: {X}, y: {Y}, click times: {Times}, inter click delay: {InterClickDelay} ms", data.X, data.Y, data.Times, data.InterClickDelayMs);
-        
+
         var button = data.MouseButton;
         Mouse.MoveTo(data.X, data.Y);
         Wait.UntilInputIsProcessed();
-        
+
         for (var i = 0; i < data.Times; i++)
         {
             Mouse.Down(button);
@@ -608,13 +593,13 @@ public class WinAppSession : IDisposable
             Thread.Sleep(data.InterClickDelayMs);
         }
     }
-    
+
     private void HoverGesture(MoveGestureRequest data)
     {
         _logger.LogDebug("Move to gesture x: {X}, y: {Y}", data.EndX, data.EndY);
         Mouse.MoveTo(data.EndX, data.EndY);
     }
-    
+
     private void DragAndDropGesture(MoveGestureRequest data)
     {
         _logger.LogDebug("Drag and drop gesture startX: {StartX}, startY: {StartY}, endX: {EndX}, endY: {EndY}", data.StartX, data.StartY, data.EndX, data.EndY);
@@ -638,7 +623,8 @@ public class WinAppSession : IDisposable
         {
             throw new RequestValidationException("Only one body parameter DeltaX or DeltaY cab be specified");
         }
-        
+
+        _logger.LogDebug("Moving to X: {X}, Y: {Y}, Scroll by DeltaX: {DeltaX}, DeltaY: {DeltaY}", data.X, data.Y, data.DeltaX, data.DeltaY);
         Mouse.MoveTo(data.X, data.Y);
         Wait.UntilInputIsProcessed();
 
@@ -657,22 +643,24 @@ public class WinAppSession : IDisposable
     private void SetClipboard(ClipboardGestureRequest data)
     {
         if (data.ContentType != "plaintext" 
-            || data.ContentType != "image")
+            && data.ContentType != "image")
         {
             throw new RequestValidationException($"Body parameter ContentType value must be either 'plaintext' or 'image', received '{data.ContentType}'");
         }
 
+        _logger.LogDebug("Set clipboard content type: {ContentType}", data.ContentType);
+
         if (data.ContentType == "plaintext")
         {
-            Clipboard.SetText(data.B64Content);
+            Clipboard.SetText(data.Base64Content);
         }
         else if (data.ContentType == "image")
         {
-            if (data.B64Content is null)
+            if (data.Base64Content is null)
             {
                 throw new RequestValidationException("Body parameter B64Content is null");
             }
-            var bytes = Convert.FromBase64String(data.B64Content);
+            var bytes = Convert.FromBase64String(data.Base64Content);
             using var ms = new MemoryStream(bytes);
             using var image = Image.FromStream(ms);
             Clipboard.SetImage(image);
@@ -681,11 +669,15 @@ public class WinAppSession : IDisposable
 
     private string GetClipboard(ClipboardGestureRequest data)
     {
+        ArgumentNullException.ThrowIfNull(data);
+
         if (data.ContentType != "plaintext" 
-            || data.ContentType != "image")
+            && data.ContentType != "image")
         {
             throw new RequestValidationException($"Bo parameter ContentType value must be either 'plaintext' or 'image', received '{data.ContentType}'");
         }
+
+        _logger.LogDebug("Get clipboard content type: {ContentType}", data.ContentType);
 
         if (data.ContentType == "plaintext")
         {
@@ -698,10 +690,10 @@ public class WinAppSession : IDisposable
             {
                 return null;
             }
-            
+
             using var ms = new MemoryStream();
             image.Save(ms,image.RawFormat);
-            
+
             return Convert.ToBase64String(ms.ToArray());
         }
     }
@@ -710,16 +702,16 @@ public class WinAppSession : IDisposable
     {
         if (!_options.AllowPowershell)
         {
-            throw new Exception("Executing of powershell is disabled. Start server with '--allow-powershell' argument to enable powershell execution");
+            throw new RequestValidationException("Executing of powershell is disabled. Start server with '--allow-powershell' argument to enable powershell execution");
         }
-        
+
         if (ps.Command is null && ps.Script is null)
         {
             throw new RequestValidationException("Body parameter Command or Script must be specified");
         }
 
-        using var process = new Process();
-        
+        using Process process = new();
+
         if (ps.Command is not null)
         {
             _logger.LogDebug("Executing powershell command: {Command}", ps.Command);
@@ -728,17 +720,19 @@ public class WinAppSession : IDisposable
                 FileName = "powershell.exe",
                 Arguments = $"-Command \"{ps.Command.Replace("\"", "\\\"")}\"",
                 UseShellExecute = false,
-                RedirectStandardOutput = true
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
             };
-            
+
             process.StartInfo = processStartInfo;
             process.Start();
 
+            var result = await process.StandardOutput.ReadToEndAsync(ct);
+            await HandlePowershellError(process, ct);
             await process.WaitForExitAsync(ct);
-        
-            return await process.StandardOutput.ReadToEndAsync(ct);
+
+            return result;
         }
-        
 
         var scriptPath = $"{SessionId}.ps1";
 
@@ -756,9 +750,12 @@ public class WinAppSession : IDisposable
 
             process.StartInfo = processInfo;
             process.Start();
+            
+            var result = await process.StandardOutput.ReadToEndAsync(ct);
+            await HandlePowershellError(process, ct);
             await process.WaitForExitAsync(ct);
-            return await process.StandardOutput.ReadToEndAsync(ct);
 
+            return result;
         }
         catch (Exception e)
         {
@@ -770,6 +767,29 @@ public class WinAppSession : IDisposable
             File.Delete(scriptPath);
         }
     }
-    
+
+    private async Task HandlePowershellError(Process process, CancellationToken ct)
+    {
+        if (process.ExitCode != 0)
+        {
+            var error = await process.StandardError.ReadToEndAsync(ct);
+            _logger.LogError("Failed to execute powershell. {Error}", error);
+            throw new FailedToExecutePowershellException(error);
+        }
+    }
+
+    /// <summary>
+    /// Release all modifier keys
+    /// </summary>
+    private void ReleaseAllKeys()
+    {
+        foreach (var key in _pressedKeys.Reverse<VirtualKeyShort>())
+        {
+            _logger.LogDebug("Release key: {Key}", key.ToString());
+            Keyboard.Release(key);
+        }
+        _pressedKeys.Clear();
+    }
+
     #endregion
 }

@@ -9,6 +9,7 @@ public class ElementClickCommandHandler(ISessionManager sessionManager) : IReque
 {
     public async Task Handle(ElementClickCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         await Task.Run(() => session.ElementCLick(request.ElementId), cancellationToken);
     }

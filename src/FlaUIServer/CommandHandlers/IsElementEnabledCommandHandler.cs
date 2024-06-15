@@ -9,6 +9,7 @@ public class IsElementEnabledCommandHandler(ISessionManager sessionManager) : IR
 {
     public async Task<bool> Handle(IsElementEnabledCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.IsElementEnabled(request.ElementId), cancellationToken);
     }

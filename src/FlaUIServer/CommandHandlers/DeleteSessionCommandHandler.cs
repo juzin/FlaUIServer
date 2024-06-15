@@ -9,6 +9,7 @@ public class DeleteSessionCommandHandler(ISessionManager sessionManager) : IRequ
 {
     public async Task Handle(DeleteSessionCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         await Task.Run(() => sessionManager.DeleteSession(request.SessionId), cancellationToken);
     }
 }

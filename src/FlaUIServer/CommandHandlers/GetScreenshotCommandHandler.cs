@@ -9,6 +9,7 @@ public class GetScreenshotCommandHandler(ISessionManager sessionManager) : IRequ
 {
     public async Task<string> Handle(GetScreenshotCommand request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var session = sessionManager.GetSession(request.SessionId);
         return await Task.Run(() => session.GetScreenshot(), cancellationToken);
     }

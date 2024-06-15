@@ -7,9 +7,10 @@ public record GetElementTextCommand(Guid SessionId, Guid ElementId) : IRequest<s
 
 public class GetElementTextCommandHandler(ISessionManager sessionManager) : IRequestHandler<GetElementTextCommand, string>
 {
-         public async Task<string> Handle(GetElementTextCommand request, CancellationToken cancellationToken)
-         {
-             var session = sessionManager.GetSession(request.SessionId);
-             return await Task.Run(() => session.GetElementText(request.ElementId), cancellationToken);
-         }
+    public async Task<string> Handle(GetElementTextCommand request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var session = sessionManager.GetSession(request.SessionId);
+        return await Task.Run(() => session.GetElementText(request.ElementId), cancellationToken);
+    }
 }
