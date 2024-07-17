@@ -1,10 +1,9 @@
 using FlaUIServer.Extensions;
 using FlaUIServer.Helpers;
 using FlaUIServer.Middlewares;
-using FlaUIServer.Services;
 using Serilog;
 
-// --urls= --cleanup-cycle=90 --use-swagger --allow-powershell --log-response-body
+// --urls= --cleanup-cycle=90 --use-swagger --use-basic-auth --allow-powershell --log-response-body
 var options = CommandLineArgumentsHelper.ParseArguments(args);
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +15,6 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Add required services to the container
 builder.AddServices(options);
-
-// Inactive session cleanup
-if (options.SessionCleanupCycleSeconds != 0)
-{
-    builder.Services.AddHostedService<SessionCleanupService>();
-}
 
 var app = builder.Build();
 
@@ -41,6 +34,12 @@ if (options.LogResponseBody)
 else
 {
     app.UseSerilogRequestLogging();
+}
+
+// Basic authentication middleware
+if (options.UseBasicAuthentication)
+{
+    app.UseMiddleware<BasicAuthorizationMiddleware>();
 }
 
 // Map minimal api endpoints

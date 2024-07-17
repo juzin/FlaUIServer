@@ -8,6 +8,11 @@ public class ServerOptions
     /// Enable swagger
     /// </summary>
     public bool UseSwagger { get; set; }
+    
+    /// <summary>
+    /// Enable basic authentication
+    /// </summary>
+    public bool UseBasicAuthentication { get; set; }
 
     /// <summary>
     /// Allow execution of powershell
@@ -22,7 +27,7 @@ public class ServerOptions
     /// <summary>
     /// Cleanup cycle in second. 0 disables cleanup. Default value is 200s
     /// </summary>
-    public ushort SessionCleanupCycleSeconds { get; set; } = 90;
+    public ushort SessionCleanupCycleSeconds { get; set; } = 200;
 
     /// <summary>
     /// Urls with port server listen on

@@ -19,13 +19,10 @@ Not all endpoints are implemented.
 Additional arguments:
 
 * `--use-swagger` - Enables swagger by default is disabled
+* `--use-basic-auth` - Enables basic authentication by default is disabled, username and password needs to be configured in `application.json`
 * `--allow-powershell` - Allows powershell execution by default is disabled
 * `--log-response-body` - Enables logging of request/response body to console
 * `--cleanup-cycle=90` - Delay between cleaning of inactive session default value is 90 seconds, 0 disables cleanup service
-
-## Create release
-
-To publish new release create a **tag** on master branch with incremented version of previous tag, eg. "1.0.1". Release can be created only from **master** branch!
 
 ## Start session
 

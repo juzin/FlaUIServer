@@ -51,6 +51,9 @@ public static class CommandLineArgumentsHelper
                 case "--use-swagger":
                     options.UseSwagger = true;
                     break;
+                case "--use-basic-auth":
+                    options.UseBasicAuthentication = true;
+                    break;
                 case "--allow-powershell":
                     options.AllowPowershell = true;
                     break;
