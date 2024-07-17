@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
 using FlaUIServer.Models;
+using FlaUIServer.Services;
 using FlaUIServer.Session;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace FlaUIServer.Extensions;
@@ -20,14 +22,51 @@ public static class WebApplicationBuilderExtension
         // Configuration
         builder.Services.AddSingleton(options);
 
-        // Additional services
+        // Session manager
         builder.Services.AddSingleton<ISessionManager, SessionManager>();
 
+        // Basic authentication configuration
+        if (options.UseBasicAuthentication)
+        {
+            builder.Services.Configure<BasicAuthenticationConfiguration>(
+                builder.Configuration.GetSection(BasicAuthenticationConfiguration.BasicAuthentication));
+        }
+        
         // Add swagger services
         if (builder.Environment.IsDevelopment() || options.UseSwagger)
         {
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(x => x.ExampleFilters());
+            builder.Services.AddSwaggerGen(x =>
+            {
+                x.ExampleFilters();
+
+                // Authentication
+                if (options.UseBasicAuthentication)
+                {
+                    x.AddSecurityDefinition("basic", new OpenApiSecurityScheme
+                    {
+                        Name = "Authorization",
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "basic",
+                        In = ParameterLocation.Header,
+                        Description = "Basic Authorization header."
+                    });
+                    x.AddSecurityRequirement(new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "basic"
+                                }
+                            },
+                            Array.Empty<string>()
+                        }
+                    });
+                }
+            });
             builder.Services.AddSwaggerExamplesFromAssemblies(Assembly.GetEntryAssembly());
         }
 
@@ -35,5 +74,11 @@ public static class WebApplicationBuilderExtension
         builder.Services.AddMediatR(cfg => {
             cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
         });
+
+        // Inactive session cleanup
+        if (options.SessionCleanupCycleSeconds != 0)
+        {
+            builder.Services.AddHostedService<SessionCleanupService>();
+        }
     }
 }

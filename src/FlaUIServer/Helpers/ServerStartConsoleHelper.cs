@@ -27,7 +27,7 @@ public static class ServerStartConsoleHelper
         }
 
         logger.LogInformation("Starting FlaUI Server v{Version}, listening at url: {Urls}", Assembly.GetExecutingAssembly().GetName().Version?.ToString(), string.Join(", ", urls));
-        logger.LogInformation("Server options: {{ UseSwagger: {UseSwagger}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody}, SessionCleanupCycle: {SessionCleanupCycle} }}", options.UseSwagger, options.AllowPowershell, options.LogResponseBody, options.SessionCleanupCycleSeconds);
+        logger.LogInformation("Server options: {{ UseSwagger: {UseSwagger}, UseBasicAuthentication: {UseBasicAuthentication}, AllowPowershell: {AllowPowershell}, LogResponseBody: {LogResponseBody}, SessionCleanupCycle: {SessionCleanupCycle} }}", options.UseSwagger, options.UseBasicAuthentication, options.AllowPowershell, options.LogResponseBody, options.SessionCleanupCycleSeconds);
         if (options.UseSwagger)
         {
             logger.LogInformation("Swagger available at: {SwaggerUrls}", string.Join(", ", swaggerUrls));
